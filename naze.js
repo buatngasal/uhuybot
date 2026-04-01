@@ -267,9 +267,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 		if (db.users[m.sender]?.ban && !isCreator) return
 		
 		// Filter Set Api Key
-		if (cases.includes(command) && isCmd && (command !== 'setapikey') && global.APIKeys[global.APIs.naze] === 'YOUR_API_KEY') {
-			return m.reply('Silahkan Ganti Apikey yang ada\ndi File settings.js dengan apikey mu\nAgar semua fitur bisa digunakan dengan normal\n\nAmbil Key di : https://naze.biz.id/profile\nKemudian Gunakan Perintah\n.setapikey key_nya');
-		}
+		// if (cases.includes(command) && isCmd && (command !== 'setapikey') && global.APIKeys[global.APIs.naze] === 'YOUR_API_KEY') {
+		// 	return m.reply('Silahkan Ganti Apikey yang ada\ndi File settings.js dengan apikey mu\nAgar semua fitur bisa digunakan dengan normal\n\nAmbil Key di : https://naze.biz.id/profile\nKemudian Gunakan Perintah\n.setapikey key_nya');
+		// }
 		
 		// Mengetik & Anti Spam & Hit
 		if (naze.public && isCmd) {
@@ -2751,7 +2751,7 @@ Select Bot Settings:
 			}
 			break
 			case 'archipelago': case 'grok': case 'glm': case 'claude': {
-				if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
+				// if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
 				if (!text) return m.reply('Halo! Ada yang bisa dibantu hari ini?')
 				try {
 					let model;
@@ -2775,7 +2775,7 @@ Select Bot Settings:
 			}
 			break
 			case 'deepseek': case 'r1': {
-				if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
+				// if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
 				if (!text) return m.reply('Halo! Ada yang bisa dibantu hari ini?');
 				m.reply('Tunggu bentar, lagi mikir... 🧠');
 				try {
