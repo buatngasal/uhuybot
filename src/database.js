@@ -212,13 +212,12 @@ module.exports = {
 	checkStatus,
 	getAllExpired,
 	checkExpired
-}
-
+};
 
 let file = require.resolve(__filename)
 fs.watchFile(file, () => {
 	fs.unwatchFile(file)
-	console.log(chalk.redBright(`Update ${__filename}`))
+	console.log(chalk.yellowBright(`[UPDATE] ${__filename}`))
 	delete require.cache[file]
 	require(file)
 });

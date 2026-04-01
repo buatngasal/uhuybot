@@ -2,25 +2,24 @@ require('../settings');
 const fs = require('fs');
 const pino = require('pino');
 const path = require('path');
+const chalk = require('chalk');
 const { Boom } = require('@hapi/boom');
 const NodeCache = require('node-cache');
 const { exec, spawn, execSync } = require('child_process');
 const { parsePhoneNumber } = require('awesome-phonenumber');
-const { default: WAConnection, useMultiFileAuthState, Browsers, DisconnectReason, makeInMemoryStore, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, proto, getAggregateVotesInPollMessage } = require('baileys');
+const { default: WAConnection, useMultiFileAuthState, Browsers, DisconnectReason, makeInMemoryStore, jidNormalizedUser, makeCacheableSignalKeyStore, fetchLatestWaWebVersion } = require('baileys');
 
 const { GroupCacheUpdate, GroupParticipantsUpdate, MessagesUpsert, Solving } = require('./message');
 
 global.client = {};
 
-
 const msgRetryCounterCache = new NodeCache();
-const groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false });
 
 async function JadiBot(conn, from, m, store) {
 	async function startJadiBot() {
 		try {
+			const { version } = await fetchLatestWaWebVersion();
 			const { state, saveCreds } = await useMultiFileAuthState(`./database/jadibot/${from}`);
-			const { version, isLatest } = await fetchLatestBaileysVersion();
 			const level = pino({ level: 'silent' })
 			
 			const getMessage = async (key) => {
@@ -34,7 +33,7 @@ async function JadiBot(conn, from, m, store) {
 			}
 			
 			client[from] = WAConnection({
-				isLatest,
+				version,
 				logger: level,
 				getMessage,
 				syncFullHistory: false,
@@ -42,8 +41,10 @@ async function JadiBot(conn, from, m, store) {
 				msgRetryCounterCache,
 				retryRequestDelayMs: 10,
 				defaultQueryTimeoutMs: 0,
-				cachedGroupMetadata: async (jid) => groupCache.get(jid),
+				connectTimeoutMs: 60000,
+				keepAliveIntervalMs: 30000,
 				browser: Browsers.ubuntu('Chrome'),
+				generateHighQualityLinkPreview: false,
 				transactionOpts: {
 					maxCommitRetries: 10,
 					delayBetweenTriesMs: 10,
@@ -106,8 +107,21 @@ async function JadiBot(conn, from, m, store) {
 			
 			client[from].ev.on('contacts.update', (update) => {
 				for (let contact of update) {
-					let id = client[from].decodeJid(contact.id)
-					if (store && store.contacts) store.contacts[id] = { id, name: contact.notify }
+					let trueJid;
+					if (!trueJid) continue;
+					if (contact.id.endsWith('@lid')) {
+						trueJid = client[from].findJidByLid(jidNormalizedUser(contact.id), store, true);
+					} else {
+						trueJid = jidNormalizedUser(contact.id);
+					}
+					global.store.contacts[trueJid] = {
+						...global.store.contacts[trueJid],
+						phoneNumber: trueJid,
+						name: contact.notify
+					}
+					if (contact.id.endsWith('@lid')) {
+						global.store.contacts[trueJid].id = jidNormalizedUser(contact.id);
+					}
 				}
 			});
 			
@@ -127,23 +141,22 @@ async function JadiBot(conn, from, m, store) {
 			client[from].ev.on('groups.update', (update) => {
 				for (let n of update) {
 					if (store.groupMetadata[n.id]) {
-						groupCache.set(n.id, n);
 						Object.assign(store.groupMetadata[n.id], n);
-					}
+					} else store.groupMetadata[n.id] = n;
 				}
 			});
 			
 			client[from].ev.on('group-participants.update', async (update) => {
-				await GroupParticipantsUpdate(client[from], update, store, groupCache);
+				await GroupParticipantsUpdate(client[from], update, store);
 			});
 			
 			client[from].ev.on('messages.upsert', async (message) => {
-				await MessagesUpsert(client[from], message, store, groupCache);
+				await MessagesUpsert(client[from], message, store);
 			});
 		
 			return client[from]
 		} catch (e) {
-			console.log('Error di jadibot : ', e)
+			console.log(chalk.redBright(`[ERROR] ${e}`))
 		}
 	}
 	return startJadiBot()
@@ -157,7 +170,7 @@ async function StopJadiBot(conn, from, m) {
 		client[from].end('Stop')
 		client[from].ev.removeAllListeners()
 	} catch (e) {
-		console.log('Errornya di stopjadibot : ', e)
+		console.log(chalk.redBright(`[ERROR] ${e}`))
 	}
 	delete client[from]
 	exec(`rm -rf ./database/jadibot/${from}`)
@@ -173,3 +186,11 @@ async function ListJadiBot(conn, m) {
 }
 
 module.exports = { JadiBot, StopJadiBot, ListJadiBot }
+
+let file = require.resolve(__filename)
+fs.watchFile(file, () => {
+	fs.unwatchFile(file)
+	console.log(chalk.yellowBright(`[UPDATE] ${__filename}`))
+	delete require.cache[file]
+	require(file)
+});

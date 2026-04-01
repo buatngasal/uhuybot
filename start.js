@@ -11,7 +11,6 @@ function start() {
 			console.log(chalk.yellow.bold('[BOT] Restarting...'))
 			p.kill()
 			start()
-			delete p
 		} else if (data === 'uptime') {
 			p.send(process.uptime())
 		}

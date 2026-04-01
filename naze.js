@@ -1,5 +1,5 @@
-process.on('uncaughtException', console.error)
-process.on('unhandledRejection', console.error)
+process.once('uncaughtException', console.error)
+process.once('unhandledRejection', console.error)
 
 /*
 	* Create By Naze
@@ -10,56 +10,78 @@ process.on('unhandledRejection', console.error)
 require('./settings');
 const fs = require('fs');
 const os = require('os');
-const qs = require('qs');
 const util = require('util');
-const jimp = require('jimp');
 const path = require('path');
-const https = require('https');
 const axios = require('axios');
 const chalk = require('chalk');
 const yts = require('yt-search');
-const ytdl = require('ytdl-core');
-const cron = require('node-cron');
-const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const FileType = require('file-type');
 const { Chess } = require('chess.js');
-const google = require('googlethis');
-const similarity = require('similarity');
-const PDFDocument = require('pdfkit');
+const FormData = require('form-data');
 const webp = require('node-webpmux');
-const ffmpeg = require('fluent-ffmpeg');
 const speed = require('performance-now');
-const didYouMean = require('didyoumean');
-const { performance } = require('perf_hooks');
 const moment = require('moment-timezone');
-const translate = require('translate-google-api');
-const { Akinator, AkinatorAnswer } = require('aki-api');
+const { performance } = require('perf_hooks');
 const PhoneNum = require('awesome-phonenumber');
 const { exec, spawn, execSync } = require('child_process');
-const { BufferJSON, WA_DEFAULT_EPHEMERAL, generateWAMessageFromContent, proto, getBinaryNodeChildren, generateWAMessageContent, generateWAMessage, prepareWAMessageMedia, areJidsSameUser, getContentType } = require('baileys');
+const { generateWAMessageContent, jidNormalizedUser, getContentType } = require('baileys');
 
-const menfesTimeouts = new Map();
+const { UguuSe } = require('./lib/uploader');
 const TicTacToe = require('./lib/tictactoe');
 const { antiSpam } = require('./src/antispam');
+const { ytMp4, ytMp3 } = require('./lib/scraper');
 const templateMenu = require('./lib/template_menu');
-const { TelegraPh, UguuSe } = require('./lib/uploader');
 const { toAudio, toPTT, toVideo } = require('./lib/converter');
 const { GroupUpdate, LoadDataBase } = require('./src/message');
 const { JadiBot, StopJadiBot, ListJadiBot } = require('./src/jadibot');
-const { imageToWebp, videoToWebp, gifToWebp, writeExif } = require('./lib/exif');
-const { cmdAdd, cmdDel, cmdAddHit, addExpired, getPosition, getExpired, getStatus, checkStatus, getAllExpired, checkExpired } = require('./src/database');
+const { cmdAdd, cmdAddHit, addExpired, getPosition, getExpired, getStatus, checkStatus, getAllExpired, checkExpired } = require('./src/database');
 const { rdGame, iGame, tGame, gameSlot, gameCasinoSolo, gameSamgongSolo, gameMerampok, gameBegal, daily, buy, setLimit, addLimit, addMoney, setMoney, transfer, Blackjack, SnakeLadder } = require('./lib/game');
-const { pinterest, wallpaper, remini, wikimedia, hitamkan, yanzGpt, mediafireDl, ringtone, styletext, instagramDl, tiktokDl, facebookDl, instaStalk, telegramStalk, tiktokStalk, genshinStalk, instaStory, bk9Ai, spotifyDl, ytMp4, ytMp3, NvlGroup, quotedLyo, youSearch, gptLogic, savetube, simi, geminiAi } = require('./lib/screaper');
-const { unixTimestampSeconds, generateMessageTag, processTime, webApi, getRandom, getBuffer, fetchJson, runtime, clockString, sleep, isUrl, getTime, formatDate, formatp, jsonformat, reSize, toHD, logic, generateProfilePicture, bytesToSize, errorCache, normalize, getSizeMedia, parseMention, getGroupAdmins, readFileTxt, readFileJson, getHashedPassword, generateAuthToken, cekMenfes, generateToken, batasiTeks, randomText, isEmoji, getTypeUrlMedia, pickRandom, convertTimestampToDate, getAllHTML, tarBackup } = require('./lib/function');
+const { getRandom, getBuffer, fetchJson, runtime, clockString, sleep, isUrl, formatDate, formatp, generateProfilePicture, errorCache, normalize, runUpdate, updateSettings, parseMention, fixBytes, similarity, pickRandom, encodeToLetters, tarBackup } = require('./lib/function');
+
+require('moment/min/locales');
+const locales = moment.locales();
+const timez = moment.tz.names();
+const menfesTimeouts = new Map();
+const settingsPath = path.join(__dirname, 'settings.js');
+const cases = db.cases ? db.cases : (db.cases = [...fs.readFileSync('./naze.js', 'utf-8').matchAll(/case\s+['"]([^'"]+)['"]/g)].map(match => match[1]));
 
 module.exports = naze = async (naze, m, msg, store) => {
+	await LoadDataBase(naze, m);
+	
 	const botNumber = naze.decodeJid(naze.user.id);
-	const ownerNumber = db?.set?.[botNumber]?.owner?.map(x => x.id) || owner;
+	
+	// Read Database
+	const sewa = db.sewa
+	const premium = db.premium
+	const set = db.set[botNumber]
+	
+	// Database Game
+	let suit = db.game.suit
+	let chess = db.game.chess
+	let chat_ai = db.game.chat_ai
+	let menfes = db.game.menfes
+	let tekateki = db.game.tekateki
+	let tictactoe = db.game.tictactoe
+	let tebaklirik = db.game.tebaklirik
+	let kuismath = db.game.kuismath
+	let blackjack = db.game.blackjack
+	let tebaklagu = db.game.tebaklagu
+	let tebakkata = db.game.tebakkata
+	let family100 = db.game.family100
+	let susunkata = db.game.susunkata
+	let tebakbom = db.game.tebakbom
+	let ulartangga = db.game.ulartangga
+	let tebakkimia = db.game.tebakkimia
+	let caklontong = db.game.caklontong
+	let tebakangka = db.game.tebakangka
+	let tebaknegara = db.game.tebaknegara
+	let tebakgambar = db.game.tebakgambar
+	let tebakbendera = db.game.tebakbendera
+	
+	const ownerNumber = set.owner = [...new Set([...owner, botNumber.split('@')[0], ...set?.owner || []])];
 	
 	try {
-		
-		await LoadDataBase(naze, m);
 		await GroupUpdate(naze, m, store);
 		
 		const body = ((m.type === 'conversation') ? m.message.conversation :
@@ -76,61 +98,42 @@ module.exports = naze = async (naze, m, msg, store) => {
 		(m.type == 'protocolMessage') ? (m.message.protocolMessage?.editedMessage?.extendedTextMessage?.text || m.message.protocolMessage?.editedMessage?.conversation || m.message.protocolMessage?.editedMessage?.imageMessage?.caption || m.message.protocolMessage?.editedMessage?.videoMessage?.caption || '') : '') || '';
 		
 		const budy = (typeof m.text == 'string' ? m.text : '')
-		const isCreator = isOwner = [botNumber, ...ownerNumber].filter(v => typeof v === 'string').map(v => v.replace(/[^0-9]/g, '')).includes(m.sender.split('@')[0])
-		const cases = db.cases ? db.cases : (db.cases = [...fs.readFileSync('./naze.js', 'utf-8').matchAll(/case\s+['"]([^'"]+)['"]/g)].map(match => match[1]));
-		const prefix = isCreator ? (/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@()#,'"*+÷/\%^&.©^]/gi.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@()#,'"*+÷/\%^&.©^]/gi)[0] : /[\uD800-\uDBFF][\uDC00-\uDFFF]/gi.test(body) ? body.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]/gi)[0] : listprefix.find(a => body?.startsWith(a)) || '') : db.set[botNumber].multiprefix ? (/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@()#,'"*+÷/\%^&.©^]/gi.test(body) ? body.match(/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@()#,'"*+÷/\%^&.©^]/gi)[0] : /[\uD800-\uDBFF][\uDC00-\uDFFF]/gi.test(body) ? body.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]/gi)[0] : listprefix.find(a => body?.startsWith(a)) || '¿') : listprefix.find(a => body?.startsWith(a)) || '¿'
+		const isCreator = isOwner = ownerNumber.some(owner => {
+			const ownerJid = owner.includes('@') ? owner : owner + '@s.whatsapp.net';
+			const findJid = naze.findJidByLid(jidNormalizedUser(ownerJid), store, true);
+			if (!findJid) return false
+			return findJid === m.sender
+		});
+		const symbolMatch = body.match(/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@()#,'"*+÷/\%^&.©^]/gi);
+		const emojiMatch = body.match(/^[\uD800-\uDBFF][\uDC00-\uDFFF]/gi); 
+		const listMatch = listprefix.find(a => body?.startsWith(a));
+		const detectedPrefix = symbolMatch ? symbolMatch[0] : (emojiMatch ? emojiMatch[0] : listMatch);
+		const prefix = isCreator ? (detectedPrefix || set.authorPrefix) : set.multiprefix ? (detectedPrefix || '¿') : (listMatch || '¿');
 		const isCmd = body.startsWith(prefix)
 		const args = body.trim().split(/ +/).slice(1)
 		const quoted = m.quoted ? m.quoted : m
-		const command = isCreator ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : isCmd ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : ''
+		const command = isCmd ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : '';
 		const text = q = args.join(' ')
 		const mime = (quoted.msg || quoted).mimetype || ''
 		const qmsg = (quoted.msg || quoted)
-		const author = db?.set?.[botNumber]?.author || 'Nazedev';
-		const packname = db?.set?.[botNumber]?.packname || 'Bot WhatsApp';
-		const hari = moment.tz('Asia/Jakarta').locale('id').format('dddd');
-		const tanggal = moment.tz('Asia/Jakarta').locale('id').format('DD/MM/YYYY');
-		const jam = moment.tz('Asia/Jakarta').locale('id').format('HH:mm:ss');
-		const ucapanWaktu = jam < '05:00:00' ? 'Selamat Pagi 🌉' : jam < '11:00:00' ? 'Selamat Pagi 🌄' : jam < '15:00:00' ? 'Selamat Siang 🏙' : jam < '18:00:00' ? 'Selamat Sore 🌅' : jam < '19:00:00' ? 'Selamat Sore 🌃' : jam < '23:59:00' ? 'Selamat Malam 🌌' : 'Selamat Malam 🌌';
-		const almost = 0.72
+		const author = set.author = global.author || 'Nazedev';
+		const packname = set.packname = global.packname || 'Bot WhatsApp';
+		const botname = set.botname = global.botname || 'Hitori Bot';
+		const badWordsLower = global.badWords.map(v => v.toLowerCase());
+		const locale_day = moment.tz(timezone).locale(locale).format('dddd');
+		const date = moment.tz(timezone).locale(locale).format('DD/MM/YYYY');
+		const date_time = moment.tz(timezone).locale(locale).format('HH:mm:ss');
+		const ucapanWaktu = date_time < '05:00:00' ? 'Selamat Pagi 🌉' : date_time < '11:00:00' ? 'Selamat Pagi 🌄' : date_time < '15:00:00' ? 'Selamat Siang 🏙' : date_time < '18:00:00' ? 'Selamat Sore 🌅' : date_time < '19:00:00' ? 'Selamat Sore 🌃' : date_time < '23:59:00' ? 'Selamat Malam 🌌' : 'Selamat Malam 🌌';
+		const almost = 0.66
 		const time = Date.now()
 		const time_now = new Date()
 		const time_end = 60000 - (time_now.getSeconds() * 1000 + time_now.getMilliseconds());
 		const readmore = String.fromCharCode(8206).repeat(999)
 		const setv = pickRandom(listv)
 		
-		// Read Database
-		const sewa = db.sewa
-		const premium = db.premium
-		const set = db.set[botNumber]
-		
-		// Database Game
-		let suit = db.game.suit
-		let chess = db.game.chess
-		let chat_ai = db.game.chat_ai
-		let menfes = db.game.menfes
-		let tekateki = db.game.tekateki
-		let akinator = db.game.akinator
-		let tictactoe = db.game.tictactoe
-		let tebaklirik = db.game.tebaklirik
-		let kuismath = db.game.kuismath
-		let blackjack = db.game.blackjack
-		let tebaklagu = db.game.tebaklagu
-		let tebakkata = db.game.tebakkata
-		let family100 = db.game.family100
-		let susunkata = db.game.susunkata
-		let tebakbom = db.game.tebakbom
-		let ulartangga = db.game.ulartangga
-		let tebakkimia = db.game.tebakkimia
-		let caklontong = db.game.caklontong
-		let tebakangka = db.game.tebakangka
-		let tebaknegara = db.game.tebaknegara
-		let tebakgambar = db.game.tebakgambar
-		let tebakbendera = db.game.tebakbendera
-		
-		const isVip = db.users[m.sender] ? db.users[m.sender].vip : false
-		const isBan = db.users[m.sender] ? db.users[m.sender].ban : false
-		const isLimit = db.users[m.sender] ? (db.users[m.sender].limit > 0) : false
+		const isVip = isCreator || (db.users[m.sender] ? db.users[m.sender].vip : false)
+		const isBan = isCreator || (db.users[m.sender] ? db.users[m.sender].ban : false)
+		const isLimit = isCreator || (db.users[m.sender] ? (db.users[m.sender].limit > 0) : false)
 		const isPremium = isCreator || checkStatus(m.sender, premium) || false
 		const isNsfw = m.isGroup ? db.groups[m.chat].nsfw : false
 		
@@ -150,36 +153,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 				}
 			}
 		}
-		
-		// Reset Limit
-		cron.schedule('00 00 * * *', async () => {
-			cmdDel(db.hit);
-			console.log('Reseted Limit Users')
-			let user = Object.keys(db.users)
-			for (let jid of user) {
-				const limitUser = db.users[jid].vip ? limit.vip : checkStatus(jid, premium) ? limit.premium : limit.free
-				if (db.users[jid].limit < limitUser) db.users[jid].limit = limitUser
-			}
-			if (set?.autobackup) {
-				let datanya = './database/' + tempatDB;
-				if (tempatDB.startsWith('mongodb')) {
-					datanya = './database/backup_database.json';
-					fs.writeFileSync(datanya, JSON.stringify(global.db, null, 2), 'utf-8');
-				}
-				let tglnya = new Date().toISOString().replace(/[:.]/g, '-');
-				for (let o of ownerNumber) {
-					try {
-						await naze.sendMessage(o, { document: fs.readFileSync(datanya), mimetype: 'application/json', fileName: tglnya + '_database.json' })
-						console.log(`[AUTO BACKUP] Backup berhasil dikirim ke ${o}`);
-					} catch (e) {
-						console.error(`[AUTO BACKUP] Gagal mengirim backup ke ${o}:`, error);
-					}
-				}
-			}
-		}, {
-			scheduled: true,
-			timezone: 'Asia/Jakarta'
-		});
 		
 		// Auto Set Bio
 		if (set.autobio) {
@@ -208,7 +181,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			
 			// Anti Hidetag
-			if (!m.key.fromMe && m.mentionedJid?.length === m.metadata.participanis?.length && db.groups[m.chat].antihidetag && !isCreator && m.isBotAdmin && !m.isAdmin) {
+			if (!m.key.fromMe && m.mentionedJid?.length === m.metadata.participants?.length && db.groups[m.chat].antihidetag && !isCreator && m.isBotAdmin && !m.isAdmin) {
 				await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: false, id: m.id, participant: m.sender }})
 				await m.reply('*Anti Hidetag Sedang Aktif❗*')
 			}
@@ -220,7 +193,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 						db.groups[m.chat].tagsw[m.sender] = 1
 						await m.reply(`Grup ini terdeteksi ditandai dalam Status WhatsApp\n@${m.sender.split('@')[0]}, mohon untuk tidak menandai grup dalam status WhatsApp\nPeringatan ${db.groups[m.chat].tagsw[m.sender]}/5, akan dikick sewaktu waktu❗`)
 					} else if (db.groups[m.chat].tagsw[m.sender] >= 5) {
-						await naze.groupParticipantsUpdate(m.chat, [m.sender], 'remove').catch((err) => m.reply('Gagal!'))
+						await naze.groupParticipantsUpdate(m.chat, [m.sender], 'remove').catch((err) => m.reply(mess.fail))
 						await m.reply(`@${m.sender.split("@")[0]} telah dikeluarkan dari grup\nKarena menandai grup dalam status WhatsApp sebanyak 5x`)
 						delete db.groups[m.chat].tagsw[m.sender]
 					} else {
@@ -232,20 +205,26 @@ module.exports = naze = async (naze, m, msg, store) => {
 			
 			// Anti Toxic
 			if (!m.key.fromMe && db.groups[m.chat].antitoxic && !isCreator && m.isBotAdmin && !m.isAdmin) {
-				if (budy.toLowerCase().split(/\s+/).some(word => badWords.includes(word))) {
+				if (budy.toLowerCase().split(/\s+/).some(word => badWordsLower.includes(word))) {
 					await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: false, id: m.id, participant: m.sender }})
-					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Berkata Toxic\nMohon gunakan bahasa yang sopan.`, contextInfo: { mentionedJid: [m.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Toxic❗*'}, ...m.key }}}, {})
+					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Berkata Toxic\nMohon gunakan bahasa yang sopan.`, contextInfo: { mentionedJid: [m.key.participantAlt || m.sender], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Toxic❗*'}, ...m.key }}}, {})
 				}
 			}
 			
 			// Anti Delete
-			if (m.type == 'protocolMessage' && db.groups[m.chat].antidelete && !isCreator && m.isBotAdmin && !m.isAdmin) {
-				const mess = msg.message.protocolMessage
+			if (m.type === 'protocolMessage' && m.msg?.type === 0 && db.groups[m.chat].antidelete && !isCreator && m.isBotAdmin && !m.isAdmin) {
 				if (store?.messages?.[m.chat]?.array) {
-					const chats = store.messages[m.chat].array.find(a => a.id === mess.key.id);
-					if (!chats?.msg) return
-					chats.msg.contextInfo = { mentionedJid: [chats.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Delete❗*'}, ...chats.key }
-					const pesan = chats.type === 'conversation' ? { extendedTextMessage: { text: chats.msg, contextInfo: { mentionedJid: [chats.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Delete❗*'}, ...chats.key }}} : { [chats.type]: chats.msg }
+					const chats = store.messages[m.chat].array.find(a => a.key.id === m.msg.key.id);
+					if (!chats?.message) return
+					const msgType = Object.keys(chats.message)[0];
+					const msgContent = chats.message[msgType];
+					if (msgContent.fileSha256 && msgContent.mediaKey) {
+						msgContent.mediaKey = fixBytes(msgContent.mediaKey);
+						msgContent.fileSha256 = fixBytes(msgContent.fileSha256);
+						msgContent.fileEncSha256 = fixBytes(msgContent.fileEncSha256);
+					}
+					msgContent.contextInfo = { mentionedJid: [chats.key.participantAlt], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Delete❗*'}, ...chats.key }
+					const pesan = msgType === 'conversation' ? { extendedTextMessage: { text: msgContent, contextInfo: { mentionedJid: [chats.key.participantAlt], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Delete❗*'}, ...chats.key }}} : { [msgType]: msgContent }
 					await naze.relayMessage(m.chat, pesan, {})
 				}
 			}
@@ -254,20 +233,20 @@ module.exports = naze = async (naze, m, msg, store) => {
 			if (db.groups[m.chat].antilink && !isCreator && m.isBotAdmin && !m.isAdmin) {
 				if (budy.match('chat.whatsapp.com/')) {
 					await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: false, id: m.id, participant: m.sender }})
-					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Link Group\nMaaf Link Harus Di Hapus..`, contextInfo: { mentionedJid: [m.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Link❗*'}, ...m.key }}}, {})
+					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Link Group\nMaaf Link Harus Di Hapus..`, contextInfo: { mentionedJid: [m.key.participantAlt || m.sender], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Link❗*'}, ...m.key }}}, {})
 				}
 			}
 			
 			// Anti Virtex Group
 			if (db.groups[m.chat].antivirtex && !isCreator && m.isBotAdmin && !m.isAdmin) {
-				if (budy.length > 4000) {
+				if (budy.length > 4500) {
 					await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: false, id: m.id, participant: m.sender }})
-					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Virtex..`, contextInfo: { mentionedJid: [m.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Virtex❗*'}, ...m.key }}}, {})
+					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Virtex..`, contextInfo: { mentionedJid: [m.key.participantAlt || m.sender], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Virtex❗*'}, ...m.key }}}, {})
 					await naze.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
 				}
 				if (m.msg?.nativeFlowMessage?.messageParamsJson?.length > 3500) {
 					await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: false, id: m.id, participant: m.sender }})
-					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Bug..`, contextInfo: { mentionedJid: [m.key.participant], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Bug❗*'}, ...m.key }}}, {})
+					await naze.relayMessage(m.chat, { extendedTextMessage: { text: `Terdeteksi @${m.sender.split('@')[0]} Mengirim Bug..`, contextInfo: { mentionedJid: [m.key.participantAlt || m.sender], isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: '*Anti Bug❗*'}, ...m.key }}}, {})
 					await naze.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
 				}
 			}
@@ -278,13 +257,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 		if (m.message && m.key.remoteJid !== 'status@broadcast') {
 			if ((set.autoread && naze.public) || isCreator) {
 				naze.readMessages([m.key]);
-				console.log(chalk.black(chalk.bgWhite('[ PESAN ]:'), chalk.bgGreen(new Date), chalk.bgHex('#00EAD3')(budy || m.type), chalk.bgHex('#AF26EB')(m.key.id) + '\n' + chalk.bgCyanBright('[ DARI ] :'), chalk.bgYellow(m.pushName || (isCreator ? 'Bot' : 'Anonim')), chalk.bgHex('#FF449F')(m.sender), chalk.bgHex('#FF5700')(m.isGroup ? m.metadata.subject : m.chat.endsWith('@newsletter') ? 'Newsletter' : 'Private Chat'), chalk.bgBlue('(' + m.chat + ')')));
+				if (set.log) console.log(chalk.black(chalk.whiteBright('[CHAT]:'), chalk.greenBright(`${locale_day} ${date} (${date_time})`), chalk.hex('#AF26EB')(m.key.id) + '\n' + chalk.hex('#00EAD3')(budy || m.type) + '\n' + chalk.cyanBright('[FROM]:'), chalk.yellowBright(m.pushName || (isCreator ? 'Bot' : 'Anonim')), chalk.hex('#FF449F')(m.sender.split('@')[0]), chalk.hex('#FF5700')(m.isGroup ? m.metadata.subject : m.chat.endsWith('@newsletter') ? 'Newsletter' : 'Private Chat'), chalk.blueBright('(' + m.chat + ')')));
+				else console.log(chalk.black(chalk.bgWhite('[CHAT]:'), chalk.bgGreen(`${locale_day} ${date} (${date_time})`), chalk.bgHex('#AF26EB')(m.key.id) + '\n' + chalk.bgHex('#00EAD3')(budy || m.type) + '\n' + chalk.bgCyanBright('[FROM]:'), chalk.bgYellow(m.pushName || (isCreator ? 'Bot' : 'Anonim')), chalk.bgHex('#FF449F')(m.sender), chalk.bgHex('#FF5700')(m.isGroup ? m.metadata.subject : m.chat.endsWith('@newsletter') ? 'Newsletter' : 'Private Chat'), chalk.bgBlue('(' + m.chat + ')')));
 			}
 		}
 		
 		// Filter Bot & Ban
 		if (m.isBot) return
 		if (db.users[m.sender]?.ban && !isCreator) return
+		
+		// Filter Set Api Key
+		if (cases.includes(command) && isCmd && (command !== 'setapikey') && global.APIKeys[global.APIs.naze] === 'YOUR_API_KEY') {
+			return m.reply('Silahkan Ganti Apikey yang ada\ndi File settings.js dengan apikey mu\nAgar semua fitur bisa digunakan dengan normal\n\nAmbil Key di : https://naze.biz.id/profile\nKemudian Gunakan Perintah\n.setapikey key_nya');
+		}
 		
 		// Mengetik & Anti Spam & Hit
 		if (naze.public && isCmd) {
@@ -298,6 +283,23 @@ module.exports = naze = async (naze, m, msg, store) => {
 			if (set.antispam && antiSpam.isFiltered(m.sender)) {
 				console.log(chalk.bgRed('[ SPAM ] : '), chalk.black(chalk.bgHex('#1CFFF7')(`From -> ${m.sender}`), chalk.bgHex('#E015FF')(` In ${m.isGroup ? m.chat : 'Private Chat'}`)))
 				return m.reply('「 ❗ 」Beri Jeda 5 Detik Per Command Kak')
+			}
+			
+			if (command && set.didyoumean) {
+				let _b = ''
+				let _s = 0
+				for (const c of cases) {
+			        let sim = similarity(command.toLowerCase(), c.toLowerCase())
+			        let lengthDiff = Math.abs(command.length - c.length)
+			        if (sim > _s && lengthDiff <= 1) {
+			            _s = sim
+			            _b = c
+			        }
+			    }
+			    let s_percentage = parseInt(_s * 100)
+			    if (_s >= almost && command.toLowerCase() !== _b.toLowerCase()) {
+			        return m.reply(`Command Tidak Ditemukan!\nMungkin yang kamu maksud:\n- ${prefix + _b}\n- Similarity: ${s_percentage}%`);
+			    }
 			}
 		}
 		
@@ -315,37 +317,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 			const jwb_salam = ['Wa\'alaikumusalam','Wa\'alaikumusalam wr wb','Wa\'alaikumusalam Warohmatulahi Wabarokatuh']
 			m.reply(pickRandom(jwb_salam))
 		}
-		
-		// Waktu Sholat
-		const jadwalSholat = {
-			Subuh: '04:30',
-			Dzuhur: '12:06',
-			Ashar: '15:21',
-			Maghrib: '18:08',
-			Isya: '19:00'
-		}
-		if (!this.intervalSholat) this.intervalSholat = null;
-		if (!this.waktusholat) this.waktusholat = {};
-		if (this.intervalSholat) clearInterval(this.intervalSholat); 
-		setTimeout(() => {
-			this.intervalSholat = setInterval(async() => {
-				const sekarang = moment.tz('Asia/Jakarta');
-				const jamSholat = sekarang.format('HH:mm');
-				const hariIni = sekarang.format('YYYY-MM-DD');
-				const detik = sekarang.format('ss');
-				if (detik !== '00') return;
-				for (const [sholat, waktu] of Object.entries(jadwalSholat)) {
-					if (jamSholat === waktu && this.waktusholat[sholat] !== hariIni) {
-						this.waktusholat[sholat] = hariIni
-						for (const [idnya, settings] of Object.entries(db.groups)) {
-							if (settings.waktusholat) {
-								await naze.sendMessage(idnya, { text: `Waktu *${sholat}* telah tiba, ambilah air wudhu dan segeralah shalat🙂.\n\n*${waktu.slice(0, 5)}*\n_untuk wilayah Jakarta dan sekitarnya._` }, { ephemeralExpiration: m.expiration || store?.messages[idnya]?.array?.slice(-1)[0]?.metadata?.ephemeralDuration || 0 }).catch(e => {})
-							}
-						}
-					}
-				}
-			}, 60000)
-		}, time_end);
 		
 		// Cek Expired
 		checkExpired(premium);
@@ -407,13 +378,13 @@ module.exports = naze = async (naze, m, msg, store) => {
 			roof.lastMove = now;
 			if (m.sender == roof.p2 && /^(acc(ept)?|terima|gas|oke?|tolak|gamau|nanti|ga(k.)?bisa|y)/i.test(m.text) && m.isGroup && roof.status == 'wait') {
 				if (/^(tolak|gamau|nanti|n|ga(k.)?bisa)/i.test(m.text)) {
-					m.reply(`@${roof.p2.split`@`[0]} menolak suit,\nsuit dibatalkan`)
+					m.reply(`@${roof.p2.split('@')[0]} menolak suit,\nsuit dibatalkan`)
 					delete suit[roof.id]
 					return !0
 				}
 				roof.status = 'play';
 				roof.asal = m.chat;
-				m.reply(`Suit telah dikirimkan ke chat\n\n@${roof.p.split`@`[0]} dan @${roof.p2.split`@`[0]}\n\nSilahkan pilih suit di chat masing-masing klik https://wa.me/${botNumber.split`@`[0]}`)
+				m.reply(`Suit telah dikirimkan ke chat\n\n@${roof.p.split('@')[0]} dan @${roof.p2.split('@')[0]}\n\nSilahkan pilih suit di chat masing-masing klik https://wa.me/${botNumber.split('@')[0]}`)
 				if (!roof.pilih) naze.sendMessage(roof.p, { text: `Silahkan pilih \n\nBatu🗿\nKertas📄\nGunting✂️` }, { quoted: m })
 				if (!roof.pilih2) naze.sendMessage(roof.p2, { text: `Silahkan pilih \n\nBatu🗿\nKertas📄\nGunting✂️` }, { quoted: m })
 			}
@@ -444,7 +415,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				else if (stage == stage2) tie = true
 				db.users[roof.p == win ? roof.p : roof.p2].limit += tie ? 0 : 3
 				db.users[roof.p == win ? roof.p : roof.p2].money += tie ? 0 : 3000
-				naze.sendMessage(roof.asal, { text: `_*Hasil Suit*_${tie ? '\nSERI' : ''}\n\n@${roof.p.split`@`[0]} (${roof.text}) ${tie ? '' : roof.p == win ? ` Menang \n` : ` Kalah \n`}\n@${roof.p2.split`@`[0]} (${roof.text2}) ${tie ? '' : roof.p2 == win ? ` Menang \n` : ` Kalah \n`}\n\nPemenang Mendapatkan\n*Hadiah :* Uang(3000) & Limit(3)`.trim(), mentions: [roof.p, roof.p2] }, { quoted: m })
+				naze.sendMessage(roof.asal, { text: `_*Hasil Suit*_${tie ? '\nSERI' : ''}\n\n@${roof.p.split('@')[0]} (${roof.text}) ${tie ? '' : roof.p == win ? ` Menang \n` : ` Kalah \n`}\n@${roof.p2.split('@')[0]} (${roof.text2}) ${tie ? '' : roof.p2 == win ? ` Menang \n` : ` Kalah \n`}\n\nPemenang Mendapatkan\n*Hadiah :* Uang(3000) & Limit(3)`.trim(), mentions: [roof.p, roof.p2] }, { quoted: m })
 				delete suit[roof.id]
 			}
 		}
@@ -479,41 +450,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 					await m.reply(`*KAMU HEBAT ಠ⁠ᴥ⁠ಠ*\n\n${brd.join('')}\n\n*Terpilih :* ${tebakbom[m.sender].pick}\n*Sisa nyawa :* ${tebakbom[m.sender].nyawa}\n*Bomb :* ${tebakbom[m.sender].bomb}\nBonus Money 💰 *+6000*`);
 					delete tebakbom[m.sender];
 				} else m.reply(`*PILIH ANGKA*\n\n${brd.join('')}\n\nTerpilih : ${tebakbom[m.sender].pick}\nSisa nyawa : ${tebakbom[m.sender].nyawa}\nBomb : ${tebakbom[m.sender].bomb}`)
-			}
-		}
-		
-		// Akinator
-		if (m.sender in akinator) {
-			if (m.quoted && akinator[m.sender].key == m.quoted.id) {
-				if (budy == '5') {
-					if (akinator[m.sender]?.progress?.toFixed(0) == 0) {
-						delete akinator[m.sender]
-						return m.reply(`🎮 Akinator Game End!\nWith *0* Progress`)
-					}
-					akinator[m.sender].isWin = false
-					await akinator[m.sender].cancelAnswer()
-					let { key } = await m.reply(`🎮 Akinator Game Back :\n\n@${m.sender.split('@')[0]} (${akinator[m.sender].progress.toFixed(2)}) %\n${akinator[m.sender].question}\n\n- 0 - Ya\n- 1 - Tidak\n- 2 - Tidak Tau\n- 3 - Mungkin\n- 4 - Mungkin Tidak\n- 5 - ${akinator[m.sender]?.progress?.toFixed(0) == 0 ? 'End' : 'Back'}`)
-					akinator[m.sender].key = key.id
-				} else if (akinator[m.sender].isWin && ['benar', 'ya'].includes(budy.toLowerCase())) {
-					m.react('🎊')
-					delete akinator[m.sender]
-				} else {
-					if (!isNaN(budy) && budy.match(/^[0-4]$/) && budy) {
-						if (akinator[m.sender].isWin) {
-							let { key } = await m.reply({ image: { url: akinator[m.sender].sugestion_photo }, caption: `🎮 Akinator Answer :\n\n@${m.sender.split('@')[0]}\nDia adalah *${akinator[m.sender].sugestion_name}*\n_${akinator[m.sender].sugestion_desc}_\n\n- 5 - Back\n- *Ya* (untuk keluar dari sesi)`, contextInfo: { mentionedJid: [m.sender] }});
-							akinator[m.sender].key = key.id
-						} else {
-							await akinator[m.sender].answer(budy)
-							if (akinator[m.sender].isWin) {
-								let { key } = await m.reply({ image: { url: akinator[m.sender].sugestion_photo }, caption: `🎮 Akinator Answer :\n\n@${m.sender.split('@')[0]}\nDia adalah *${akinator[m.sender].sugestion_name}*\n_${akinator[m.sender].sugestion_desc}_\n\n- 5 - Back\n- *Ya* (untuk keluar dari sesi)`, contextInfo: { mentionedJid: [m.sender] }});
-								akinator[m.sender].key = key.id
-							} else {
-								let { key } = await m.reply(`🎮 Akinator Game :\n\n@${m.sender.split('@')[0]} (${akinator[m.sender].progress.toFixed(2)}) %\n${akinator[m.sender].question}\n\n- 0 - Ya\n- 1 - Tidak\n- 2 - Tidak Tau\n- 3 - Mungkin\n- 4 - Mungkin Tidak\n- 5 - Back`)
-								akinator[m.sender].key = key.id
-							}
-						}
-					}
-				}
 			}
 		}
 		
@@ -700,22 +636,22 @@ module.exports = naze = async (naze, m, msg, store) => {
 				const pesan = m.type === 'conversation' ? { extendedTextMessage: { text: m.msg, contextInfo: { isForwarded: true, forwardingScore: 1, quotedMessage: { conversation: `*Pesan Dari ${menfes[m.sender].nama ? menfes[m.sender].nama : 'Seseorang'}*`}, key: { remoteJid: '0@s.whatsapp.net', fromMe: false, participant: '0@s.whatsapp.net' }}}} : { [m.type]: m.msg }
 				await naze.relayMessage(menfes[m.sender].tujuan, pesan, {});
 			}
-			
 			if (chat_ai[m.sender] && m.key.remoteJid !== 'status@broadcast') {
 				if (!/^(del((room|c|hat)ai)|>|<$)$/i.test(command) && budy) {
 					chat_ai[m.sender].push({ role: 'user', content: budy });
+					if (chat_ai[m.sender].length > 20) chat_ai[m.sender].shift();
 					let hasil;
 					try {
-						hasil = await gptLogic(chat_ai[m.sender], budy)
+						hasil = await fetchApi('/ai/chat4', {
+							messages: chat_ai[m.sender],
+							prompt: budy
+						}, { method: 'POST' });
 					} catch (e) {
-						try {
-							hasil = await yanzGpt(chat_ai[m.sender])
-						} catch (e) {
-							hasil = 'Gagal Mengambil Respon, Website sedang gangguan'
-						}
+						hasil = 'Gagal Mengambil Respon, Website sedang gangguan'
 					}
-					const response = hasil?.choices?.[0]?.message?.content || hasil || 'Maaf, saya tidak mengerti.';
+					const response = hasil?.result?.message || 'Maaf, saya tidak mengerti.';
 					chat_ai[m.sender].push({ role: 'assistant', content: response });
+					if (chat_ai[m.sender].length > 20) chat_ai[m.sender].shift();
 					await m.reply(response)
 				}
 			}
@@ -738,7 +674,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 			user.afkReason = ''
 		}
 		
-		
 		switch(fileSha256 || command) {
 			// Tempat Add Case
 			case '19rujxl1e': {
@@ -750,54 +685,71 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'shutdown': case 'off': {
 				if (!isCreator) return m.reply(mess.owner)
 				m.reply(`*[BOT] Process Shutdown...*`).then(() => {
-					process.exit(0)
+					process.exit(0);
 				})
+			}
+			break
+			case 'update': case 'upgrade': {
+				if (!isCreator) return m.reply(mess.owner)
+				m.reply(`*[BOT] Process Update And Upgrade...*`).then(() => {
+					try {
+						runUpdate();
+					} catch (e) {
+						process.exit(0);
+					}
+				})
+			}
+			break
+			case 'byq': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (!m.quoted) return m.reply(mess.quoted)
+				delete m.quoted.chat
+				let anya = Object.values(m.quoted.fakeObj())[1]
+				m.reply(`const byt = ${JSON.stringify(anya.message, null, 2)}\nnaze.relayMessage(m.chat, byt, {})`)
 			}
 			break
 			case 'setbio': {
 				if (!isCreator) return m.reply(mess.owner)
-				if (!text) return m.reply('Mana text nya?')
+				if (!text) return m.reply(mess.text)
 				naze.setStatus(q)
 				m.reply(`*Bio telah di ganti menjadi ${q}*`)
 			}
 			break
 			case 'setppbot': {
 				if (!isCreator) return m.reply(mess.owner)
-				if (!/image/.test(quoted.type)) return m.reply(`Reply Image Dengan Caption ${prefix + command}`)
-				let media = await naze.downloadAndSaveMediaMessage(quoted, 'ppbot.jpeg')
-				if (text.length > 0) {
-					let { img } = await generateProfilePicture(media)
-					await naze.query({
-						tag: 'iq',
-						attrs: {
-							to: '@s.whatsapp.net',
-							type: 'set',
-							xmlns: 'w:profile:picture'
-						},
-						content: [{ tag: 'picture', attrs: { type: 'image' }, content: img }]
-					})
-					await fs.unlinkSync(media)
-					m.reply('Sukses')
-				} else {
-					await naze.updateProfilePicture(botNumber, { url: media })
-					await fs.unlinkSync(media)
-					m.reply('Sukses')
-				}
+				if (!/image/.test(quoted.type)) return m.reply(`Reply Image With Caption ${prefix + command}`)
+				let media = await quoted.download();
+				let { img } = await generateProfilePicture(media, text.length > 0 ? null : 512)
+				await naze.query({
+					tag: 'iq',
+					attrs: {
+						to: '@s.whatsapp.net',
+						type: 'set',
+						xmlns: 'w:profile:picture'
+					},
+					content: [{ tag: 'picture', attrs: { type: 'image' }, content: img }]
+				});
+				m.reply(mess.done)
 			}
 			break
 			case 'delppbot': {
 				if (!isCreator) return m.reply(mess.owner)
 				await naze.removeProfilePicture(naze.user.id)
-				m.reply('Sukses')
+				m.reply(mess.done)
+			}
+			break
+			case 'version': case 'versi': case 'v': {
+				m.reply(`Version : ${require('./package.json').version}`);
 			}
 			break
 			case 'join': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply('Masukkan Link Group!')
 				if (!isUrl(args[0]) && !args[0].includes('whatsapp.com')) return m.reply('Link Invalid!')
-				const result = args[0].split('https://chat.whatsapp.com/')[1]
+				const result = args[0].match(/chat\.whatsapp\.com\/([0-9A-Za-z]+)/)
+				if (!result) return m.reply('Link Invalid❗')
 				m.reply(mess.wait)
-				await naze.groupAcceptInvite(result).catch((res) => {
+				await naze.groupAcceptInvite(result[1]).catch((res) => {
 					if (res.data == 400) return m.reply('Grup Tidak Di Temukan❗');
 					if (res.data == 401) return m.reply('Bot Di Kick Dari Grup Tersebut❗');
 					if (res.data == 409) return m.reply('Bot Sudah Join Di Grup Tersebut❗');
@@ -814,25 +766,25 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'clearchat': {
 				if (!isCreator) return m.reply(mess.owner)
 				await naze.chatModify({ delete: true, lastMessages: [{ key: m.key, messageTimestamp: m.timestamp }] }, m.chat).catch((e) => m.reply('Gagal Menghapus Chat!'))
-				m.reply('Sukses Membersihkan Pesan')
+				m.reply(mess.done)
 			}
 			break
 			case 'getmsgstore': case 'storemsg': {
 				if (!isCreator) return m.reply(mess.owner)
 				let [teks1, teks2] = text.split`|`
 				if (teks1 && teks2) {
-					const msgnya = await store.loadMessage(teks1, teks2)
+					const msgnya = await global.loadMessage(teks1, teks2)
 					if (msgnya?.message) await naze.relayMessage(m.chat, msgnya.message, {})
 					else m.reply('Pesan Tidak Ditemukan!')
-				} else m.reply(`Contoh: ${prefix + command} 123xxx@g.us|3EB0xxx`)
+				} else m.reply(`Example: ${prefix + command} 123xxx@g.us|3EB0xxx`)
 			}
 			break
 			case 'blokir': case 'block': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (text || m.quoted) {
 					const numbersOnly = m.isGroup ? (text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender) : m.chat
-					await naze.updateBlockStatus(numbersOnly, 'block').then((a) => m.reply(mess.done)).catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+					await naze.updateBlockStatus(numbersOnly, 'block').then((a) => m.reply(mess.done)).catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'listblock': {
@@ -844,27 +796,31 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isCreator) return m.reply(mess.owner)
 				if (text || m.quoted) {
 					const numbersOnly = m.isGroup ? (text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender) : m.chat
-					await naze.updateBlockStatus(numbersOnly, 'unblock').then((a) => m.reply(mess.done)).catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+					await naze.updateBlockStatus(numbersOnly, 'unblock').then((a) => m.reply(mess.done)).catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'ban': case 'banned': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
-				const nmrnya = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(text.replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = text.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				if (db.users[nmrnya] && !db.users[nmrnya].ban) {
 					db.users[nmrnya].ban = true
-					m.reply('User Telah Di ban!')
+					m.reply(mess.done)
 				} else m.reply('User tidak terdaftar di database!')
 			}
 			break
 			case 'unban': case 'unbanned': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
-				const nmrnya = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(text.replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = text.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				if (db.users[nmrnya] && db.users[nmrnya].ban) {
 					db.users[nmrnya].ban = false
-					m.reply('User Telah Di unban!')
+					m.reply(mess.done)
 				} else m.reply('User tidak terdaftar di database!')
 			}
 			break
@@ -876,46 +832,57 @@ module.exports = naze = async (naze, m, msg, store) => {
 					m.reply('Bot Telah Di Mute Di Grup Ini!')
 				} else if (command == 'unmute') {
 					db.groups[m.chat].mute = false
-					m.reply('Sukses Unmute')
+					m.reply(mess.done + ' Unmute')
 				}
 			}
 			break
 			case 'addowner': {
 				if (!isCreator) return m.reply(mess.owner)
-				if (!text || isNaN(text)) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
-				const nmrnya = text.replace(/[^0-9]/g, '')
+				if (!text) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
+				const nmrnya = naze.findJidByLid(text.replace(/[^0-9]/g, ''), store, true)
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
-				if (db?.set?.[botNumber]?.owner) {
-					if (db.set[botNumber].owner.find(a => a.id === nmrnya)) return m.reply('Nomer Tersebut Sudah Ada Di Owner!')
-					db.set[botNumber].owner.push({ id: nmrnya, lock: false });
+				if (!onWa.length > 0) return m.reply(mess.onWa)
+				if (set?.owner) {
+					if (set.owner.find(a => nmrnya.includes(a))) return m.reply('Nomer Tersebut Sudah Ada Di Owner!')
+					set.owner.push(nmrnya.split('@')[0]);
+					await updateSettings({
+						filePath: settingsPath,
+						owner: set.owner
+					});
 				}
-				m.reply('Sukses Add Owner')
+				m.reply(mess.done)
 			}
 			break
 			case 'delowner': {
 				if (!isCreator) return m.reply(mess.owner)
-				if (!text || isNaN(text)) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
-				const nmrnya = text.replace(/[^0-9]/g, '')
+				if (!text) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx`)
+				const nmrnya = naze.findJidByLid(text.replace(/[^0-9]/g, ''), store, true)
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
-				let list = db.set[botNumber].owner
-				const index = list.findIndex(o => o.id === nmrnya);
+				if (!onWa.length > 0) return m.reply(mess.onWa)
+				if (botNumber === nmrnya) return m.reply('Nomer Bot Tidak Boleh dihapus dari owner!')
+				let list = set.owner
+				const index = list.findIndex(o => o === nmrnya.split('@')[0]);
 				if (index === -1) return m.reply('Owner tidak ditemukan di daftar!')
 				list.splice(index, 1)
-				m.reply('Sukses Delete Owner')
+				await updateSettings({
+					filePath: settingsPath,
+					owner: set.owner
+				});
+				m.reply(mess.done)
 			}
 			break
 			case 'adduang': case 'addmoney': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!args[0] || !args[1] || isNaN(args[1])) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx 1000`)
 				if (args[1].length > 15) return m.reply('Jumlah Money Maksimal 15 digit angka!')
-				const nmrnya = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(args[0].replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = args[0].replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+				if (!onWa.length > 0) return m.reply(mess.onWa)
 				if (db.users[nmrnya] && db.users[nmrnya].money >= 0) {
 					addMoney(args[1], nmrnya, db)
-					m.reply('Sukses Add Uang')
+					m.reply(mess.done)
 				} else m.reply('User tidak terdaftar di database!')
 			}
 			break
@@ -923,12 +890,14 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!args[0] || !args[1] || isNaN(args[1])) return m.reply(`Kirim/tag Nomernya!\nExample:\n${prefix + command} 62xxx 10`)
 				if (args[1].length > 10) return m.reply('Jumlah Limit Maksimal 10 digit angka!')
-				const nmrnya = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(args[0].replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = args[0].replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+				if (!onWa.length > 0) return m.reply(mess.onWa)
 				if (db.users[nmrnya] && db.users[nmrnya].limit >= 0) {
 					addLimit(args[1], nmrnya, db)
-					m.reply('Sukses Add limit')
+					m.reply(mess.done)
 				} else m.reply('User tidak terdaftar di database!')
 			}
 			break
@@ -939,7 +908,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (anu.length === 0) return m.reply(teks)
 				for (let i of anu) {
 					if (store.messages?.[i]?.array?.length) {
-						let nama = naze.getName(m.sender)
+						let nama = naze.getName(i);
 						teks += `${setv} *Nama :* ${nama}\n${setv} *User :* @${i.split('@')[0]}\n${setv} *Chat :* https://wa.me/${i.split('@')[0]}\n\n=====================\n\n`
 					}
 				}
@@ -958,7 +927,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 					} catch (e) {
 						metadata = (store.groupMetadata[i] = await naze.groupMetadata(i).catch(e => ({})))
 					}
-					teks += metadata?.subject ? `${setv} *Nama :* ${metadata.subject}\n${setv} *Admin :* ${metadata.owner ? `@${metadata.owner.split('@')[0]}` : '-' }\n${setv} *ID :* ${metadata.id}\n${setv} *Dibuat :* ${moment(metadata.creation * 1000).tz('Asia/Jakarta').format('DD/MM/YYYY HH:mm:ss')}\n${setv} *Member :* ${metadata.participants.length}\n\n=====================\n\n` : ''
+					teks += metadata?.subject ? `${setv} *Nama :* ${metadata.subject}\n${setv} *Admin :* ${metadata.ownerPn ? `@${metadata.ownerPn.split('@')[0]}` : '-' }\n${setv} *ID :* ${metadata.id}\n${setv} *Dibuat :* ${moment(metadata.creation * 1000).tz(timezone).format('DD/MM/YYYY HH:mm:ss')}\n${setv} *Member :* ${metadata.participants.length}\n\n=====================\n\n` : ''
 				}
 				await m.reply(teks)
 			}
@@ -971,7 +940,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				await m.reply(`*Link Group :* *https://chat.whatsapp.com/${res}*\n\n*Nama Group :* *${group.subject}*\nSegera Masuk dalam 30 detik\nAgar menjadi Admin`, { detectLink: true })
 				await sleep(30000)
 				await naze.groupParticipantsUpdate(group.id, [m.sender], 'promote').catch(e => {});
-				await naze.sendMessage(group.id, { text: 'Done' })
+				await naze.sendMessage(group.id, { text: mess.done })
 			}
 			break
 			case 'addsewa': case 'sewa': {
@@ -979,17 +948,18 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example:\n${prefix + command} https://chat.whatsapp.com/xxx | waktu\n${prefix + command} https://chat.whatsapp.com/xxx | 30 hari`)
 				let [teks1, teks2] = text.split('|')?.map(x => x.trim()) || [];
 				if (!isUrl(teks1) && !teks1.includes('chat.whatsapp.com/')) return m.reply('Link Invalid!')
-				const urlny = teks1.split('chat.whatsapp.com/')[1]
+				const urlny = teks1.match(/chat\.whatsapp\.com\/([0-9A-Za-z]+)/)
+				if (!urlny) return m.reply('Link Invalid❗')
 				try {
-					await naze.groupAcceptInvite(urlny)
+					await naze.groupAcceptInvite(urlny[1])
 				} catch (e) {
 					if (e.data == 400) return m.reply('Grup Tidak Di Temukan❗');
 					if (e.data == 401) return m.reply('Bot Di Kick Dari Grup Tersebut❗');
 					if (e.data == 410) return m.reply('Url Grup Telah Di Setel Ulang❗');
 					if (e.data == 500) return m.reply('Grup Penuh❗');
 				}
-				await naze.groupGetInviteInfo(urlny).then(a => {
-					addExpired({ url: urlny, expired: (teks2?.replace(/[^0-9]/g, '') || 30) + 'd', ...a }, sewa)
+				await naze.groupGetInviteInfo(urlny[1]).then(a => {
+					addExpired({ url: urlny[1], expired: (teks2?.replace(/[^0-9]/g, '') || 30) + 'd', id: a.id }, sewa)
 					m.reply('Sukses Menambahkan Sewa Selama ' + (teks2?.replace(/[^0-9]/g, '') || 30) + ' hari\nOtomatis Keluar Saat Waktu Habis!')
 				}).catch(e => m.reply('Gagal Menambahkan Sewa!'))
 			}
@@ -997,9 +967,16 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'delsewa': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply(`Example:\n${prefix + command} https://chat.whatsapp.com/xxxx\n Or \n${prefix + command} id_group@g.us`)
-				const urlny = text.split('chat.whatsapp.com/')[1].trim()
+				let urlny;
+				if (text.includes('chat.whatsapp.com/')) {
+					urlny = text.match(/chat\.whatsapp\.com\/([0-9A-Za-z]+)/)[1]
+				} else if (/@g\.us$/.test(text)) {
+					urlny = text.trim()
+				} else {
+					return m.reply('Format tidak valid❗')
+				}
 				if (checkStatus(urlny, sewa)) {
-					await m.reply('Sukses Menghapus Sewa')
+					await m.reply(mess.done)
 					await naze.groupLeave(getStatus(urlny, sewa).id).catch(e => {});
 					sewa.splice(getPosition(urlny, sewa), 1);
 				} else m.reply(`${text} Tidak Terdaftar Di Database\nExample:\n${prefix + command} https://chat.whatsapp.com/xxxx\n Or \n${prefix + command} id_group@g.us`)
@@ -1018,9 +995,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply(`Example:\n${prefix + command} @tag|waktu\n${prefix + command} @${m.sender.split('@')[0]}|30 hari`)
 				let [teks1, teks2] = text.split('|').map(x => x.trim());
-				const nmrnya = teks1.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(teks1.replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = teks1.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+				if (!onWa.length > 0) return m.reply(mess.onWa)
 				if (teks2) {
 					if (db.users[nmrnya] && db.users[nmrnya].limit >= 0) {
 						addExpired({ id: nmrnya, expired: teks2.replace(/[^0-9]/g, '') + 'd' }, premium);
@@ -1034,7 +1013,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'delpr': case 'delprem': case 'delpremium': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (!text) return m.reply(`Example:\n${prefix + command} @tag`)
-				const nmrnya = text.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+				const findJid = naze.findJidByLid(text.replace(/[^0-9]/g, '') + '@lid', store);
+				const klss = text.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+				const nmrnya = naze.findJidByLid(klss, store, true)
 				if (db.users[nmrnya] && db.users[nmrnya].limit >= 0) {
 					if (checkStatus(nmrnya, premium)) {
 						premium.splice(getPosition(nmrnya, premium), 1);
@@ -1060,20 +1041,25 @@ module.exports = naze = async (naze, m, msg, store) => {
 				const backgroundColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
 				try {
 					if (quoted.isMedia) {
-						if (/image|video/.test(quoted.mime)) {
-							await naze.sendMessage('status@broadcast', {
-								[`${quoted.mime.split('/')[0]}`]: await quoted.download(),
-								caption: text || m.quoted?.body || ''
-							}, { statusJidList, broadcast: true })
-							m.react('✅')
-						} else if (/audio/.test(quoted.mime)) {
-							await naze.sendMessage('status@broadcast', {
-								audio: await quoted.download(),
-								mimetype: 'audio/mp4',
-								ptt: true
-							}, { backgroundColor, statusJidList, broadcast: true })
-							m.react('✅')
-						} else m.reply('Only Support video/audio/image/text')
+						let media = await naze.downloadAndSaveMediaMessage(qmsg);
+						try {
+							if (/image|video/.test(quoted.mime)) {
+								await naze.sendMessage('status@broadcast', {
+									[`${quoted.mime.split('/')[0]}`]: { url: media },
+									caption: text || m.quoted?.body || ''
+								}, { statusJidList, broadcast: true })
+								m.react('✅')
+							} else if (/audio/.test(quoted.mime)) {
+								await naze.sendMessage('status@broadcast', {
+									audio: { url: media },
+									mimetype: 'audio/mp4',
+									ptt: true
+								}, { backgroundColor, statusJidList, broadcast: true })
+								m.react('✅')
+							} else m.reply('Only Support video/audio/image/text')
+						} finally {
+							if (fs.existsSync(media)) fs.unlinkSync(media);
+						}
 					} else if (quoted.text) {
 						await naze.sendMessage('status@broadcast', { text: text || m.quoted?.body || '' }, {
 							textArgb: 0xffffffff,
@@ -1084,7 +1070,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 						m.react('✅')
 					} else m.reply('Only Support video/audio/image/text')
 				} catch (e) {
-					m.reply('Gagal Mengupload Status Whatsapp!')
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -1102,9 +1088,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 						fs.writeFile('naze.js', codeBaru, 'utf8', (err) => {
 							if (err) {
 								m.reply('Terjadi kesalahan saat menulis file: ', err);
-							} else m.reply('Case berhasil ditambahkan');
+							} else m.reply(mess.done);
 						});
-					} else m.reply('Gagal Menambahkan case!');
+					} else m.reply(mess.fail);
 				});
 			}
 			break
@@ -1133,8 +1119,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 					const modifiedData = data.replace(regex, '');
 					fs.writeFile('naze.js', modifiedData, 'utf8', (err) => {
 						if (err) {
-							m.reply('Terjadi kesalahan saat menulis file: ', err);
-						} else m.reply('Case berhasil dihapus dari file');
+							console.log(err);
+							m.reply(mess.fail);
+						} else m.reply(mess.done);
 					});
 				});
 			}
@@ -1215,9 +1202,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 				});
 			}
 			break
-			case 'deletesampah': case 'delsampah': {
+			case 'deletesampah': case 'delsampah': case 'deletetemp': case 'deltemp': {
 				if (!isCreator) return m.reply(mess.owner)
-				fs.readdir('./database/sampah', async function (err, files) {
+				fs.readdir('./database/temp', async function (err, files) {
 					if (err) {
 						console.error('Unable to scan directory: ' + err);
 						return m.reply('Unable to scan directory: ' + err);
@@ -1231,7 +1218,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 					if (text && text == 'true') {
 						let { key } = await m.reply('Menghapus Sampah File..')
 						await filteredArray.forEach(function (file) {
-							fs.unlinkSync('./database/sampah/' + file)
+							fs.unlinkSync('./database/temp/' + file)
 						});
 						sleep(2000)
 						m.reply('Berhasil Menghapus Semua Sampah', { edit: key })
@@ -1239,31 +1226,171 @@ module.exports = naze = async (naze, m, msg, store) => {
 				});
 			}
 			break
+			case 'setmessbot': case 'setbotmessages': {
+				if (!isCreator) return m.reply(mess.owner)
+				const res = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/bot/lang.json');
+				if (res.some(a => a.lang === text)) {
+					const selectedLang = res.find(a => a.lang === text);
+					await updateSettings({
+						filePath: settingsPath,
+						newMess: selectedLang.messages
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} en\n*List Lang :*\n${res.map(a => '- ' + a.lang).join('\n')}`)
+			}
+			break
+			case 'setlimitbot': case 'setbotlimit': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (['free','premium','vip'].includes(args[0]) && !isNaN(args[1])) {
+					await updateSettings({
+						filePath: settingsPath,
+						setLimitRole: { role: args[0], value: Number(args[1]) }
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} premium 10000\n*List Membership :*\n- free ${global.limit.free}\n- premium ${global.limit.premium}\n- vip ${global.limit.vip}`)
+			}
+			break
+			case 'setmoneybot': case 'setbotmoney': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (['free','premium','vip'].includes(args[0]) && !isNaN(args[1])) {
+					await updateSettings({
+						filePath: settingsPath,
+						setMoneyRole: { role: args[0], value: Number(args[1]) }
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} premium 10000\n*List Membership :*\n- free ${global.money.free}\n- premium ${global.money.premium}\n- vip ${global.money.vip}`)
+			}
+			break
 			case 'setnamebot': case 'setbotname': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (text || m.quoted) {
 					const teksnya = text ? text : m.quoted.text
-					if (db?.set?.[botNumber]?.setbotname) db.set[botNumber].setbotname = teksnya
-					m.reply('Sukses')
-				} else m.reply(`Contoh: ${prefix + command} textnya`)
+					await updateSettings({
+						filePath: settingsPath,
+						botname: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} Hitori bot`)
 			}
 			break
 			case 'setpacknamebot': case 'setbotpackname': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (text || m.quoted) {
 					const teksnya = text ? text : m.quoted.text
-					if (db?.set?.[botNumber]?.packname) db.set[botNumber].packname = teksnya
-					m.reply('Sukses')
-				} else m.reply(`Contoh: ${prefix + command} textnya`)
+					await updateSettings({
+						filePath: settingsPath,
+						packname: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} By Hitori bot`)
 			}
 			break
 			case 'setauthorbot': case 'setbotauthor': {
 				if (!isCreator) return m.reply(mess.owner)
 				if (text || m.quoted) {
 					const teksnya = text ? text : m.quoted.text
-					if (db?.set?.[botNumber]?.author) db.set[botNumber].author = teksnya
-					m.reply('Sukses')
-				} else m.reply(`Contoh: ${prefix + command} textnya`)
+					await updateSettings({
+						filePath: settingsPath,
+						author: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} Naze`)
+			}
+			break
+			case 'setlocale': case 'setlocalebot': case 'setbotlocale': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					if (!locales.includes(teksnya)) return m.reply('Locale List:\n' + locales.map(a => '- ' + a).join('\n'))
+					await updateSettings({
+						filePath: settingsPath,
+						locale: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} en`)
+			}
+			break
+			case 'settimezone': case 'settimezonebot': case 'setbottimezone': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					if (!timez.includes(teksnya)) return m.reply('Timezone List:\n' + timez.map(a => '- ' + a).join('\n'))
+					await updateSettings({
+						filePath: settingsPath,
+						timezone: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} Asia/Jakarta`)
+			}
+			break
+			case 'setapikey': case 'setbotapikey': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (!text) return m.reply('Mana apikey nya?')
+				if (args[0]?.toLowerCase() == 'neo') {
+					if (!args[1]?.startsWith('nsk_')) return m.reply('Apikey Tidak Valid!\nAmbil Apikey di : https://app.neosantara.xyz/api-keys');
+					let old_key = global.APIKeys[global.APIs.neosantara];
+					await updateSettings({
+						filePath: settingsPath,
+						neosantara: args[1].trim()
+					});
+					m.reply(`*Apikey telah di ganti dari ${old_key} menjadi ${q}*`)
+				} else {
+					if (!text.startsWith('nz-')) return m.reply('Apikey Tidak Valid!\nAmbil Apikey di : https://naze.biz.id/profile');
+					let old_key = global.APIKeys[global.APIs.naze];
+					await updateSettings({
+						filePath: settingsPath,
+						apikey: text.trim()
+					});
+					m.reply(`*Apikey telah di ganti dari ${old_key} menjadi ${q}*`)
+				}
+			}
+			break
+			case 'addprefix': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					await updateSettings({
+						filePath: settingsPath,
+						addPrefix: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} textnya`)
+			}
+			break
+			case 'delprefix': case 'removeprefix': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					await updateSettings({
+						filePath: settingsPath,
+						removePrefix: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} textnya`)
+			}
+			break
+			case 'addtoxic': case 'addbadword': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					await updateSettings({
+						filePath: settingsPath,
+						addBadword: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} textnya`)
+			}
+			break
+			case 'deltoxic': case 'delbadword': {
+				if (!isCreator) return m.reply(mess.owner)
+				if (text || m.quoted) {
+					const teksnya = text ? text : m.quoted.text
+					await updateSettings({
+						filePath: settingsPath,
+						removeBadword: teksnya.trim()
+					});
+					m.reply(mess.done)
+				} else m.reply(`Example: ${prefix + command} textnya`)
 			}
 			break
 			case 'sc': case 'script': {
@@ -1300,12 +1427,15 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
 					try {
-						await naze.groupParticipantsUpdate(m.chat, [numbersOnly], 'add').then(async (res) => {
+						await naze.groupParticipantsUpdate(m.chat, [nmrnya], 'add').then(async (res) => {
 							for (let i of res) {
 								let invv = await naze.groupInviteCode(m.chat)
 								const statusMessages = {
-									200: `Berhasil menambahkan @${numbersOnly.split('@')[0]} ke grup!`,
+									200: `Berhasil menambahkan @${nmrnya.split('@')[0]} ke grup!`,
 									401: 'Dia Memblokir Bot!',
 									409: 'Dia Sudah Join!',
 									500: 'Grup Penuh!'
@@ -1313,19 +1443,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 								if (statusMessages[i.status]) {
 									return m.reply(statusMessages[i.status]);
 								} else if (i.status == 408) {
-									await m.reply(`@${numbersOnly.split('@')[0]} Baru-Baru Saja Keluar Dari Grub Ini!\n\nKarena Target Private\n\nUndangan Akan Dikirimkan Ke\n-> wa.me/${numbersOnly.replace(/\D/g, '')}\nMelalui Jalur Pribadi`)
-									await m.reply(`${'https://chat.whatsapp.com/' + invv}\n------------------------------------------------------\n\nAdmin: @${m.sender.split('@')[0]}\nMengundang anda ke group ini\nSilahkan masuk jika berkehendak🙇`, { detectLink: true, chat: numbersOnly, quoted: fkontak }).catch((err) => m.reply('Gagal Mengirim Undangan!'))
+									await m.reply(`@${nmrnya.split('@')[0]} Baru-Baru Saja Keluar Dari Grub Ini!\n\nKarena Target Private\n\nUndangan Akan Dikirimkan Ke\n-> wa.me/${nmrnya.replace(/\D/g, '')}\nMelalui Jalur Pribadi`)
+									await m.reply(`${'https://chat.whatsapp.com/' + invv}\n------------------------------------------------------\n\nAdmin: @${m.sender.split('@')[0]}\nMengundang anda ke group ini\nSilahkan masuk jika berkehendak🙇`, { detectLink: true, chat: nmrnya, quoted: fkontak }).catch((err) => m.reply('Gagal Mengirim Undangan!'))
 								} else if (i.status == 403) {
 									let a = i.content.content[0].attrs
-									await naze.sendGroupInvite(m.chat, numbersOnly, a.code, a.expiration, m.metadata.subject, `Admin: @${m.sender.split('@')[0]}\nMengundang anda ke group ini\nSilahkan masuk jika berkehendak🙇`, null, { mentions: [m.sender] })
-									await m.reply(`@${numbersOnly.split('@')[0]} Tidak Dapat Ditambahkan\n\nKarena Target Private\n\nUndangan Akan Dikirimkan Ke\n-> wa.me/${numbersOnly.replace(/\D/g, '')}\nMelalui Jalur Pribadi`)
+									await naze.sendGroupInviteV4(m.chat, nmrnya, a.code, a.expiration, m.metadata.subject, `Admin: @${m.sender.split('@')[0]}\nMengundang anda ke group ini\nSilahkan masuk jika berkehendak🙇`, null, { mentions: [m.sender] })
+									await m.reply(`@${nmrnya.split('@')[0]} Tidak Dapat Ditambahkan\n\nKarena Target Private\n\nUndangan Akan Dikirimkan Ke\n-> wa.me/${nmrnya.replace(/\D/g, '')}\nMelalui Jalur Pribadi`)
 								} else m.reply('Gagal Add User\nStatus : ' + i.status)
 							}
 						})
 					} catch (e) {
-						m.reply('Terjadi Kesalahan! Gagal Add User')
+						m.reply(mess.fail)
 					}
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'kick': case 'dor': {
@@ -1334,8 +1464,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
-					await naze.groupParticipantsUpdate(m.chat, [numbersOnly], 'remove').catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
+					await naze.groupParticipantsUpdate(m.chat, [nmrnya], 'remove').catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'promote': {
@@ -1344,8 +1477,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
-					await naze.groupParticipantsUpdate(m.chat, [numbersOnly], 'promote').catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
+					await naze.groupParticipantsUpdate(m.chat, [nmrnya], 'promote').catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'demote': {
@@ -1354,8 +1490,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
-					await naze.groupParticipantsUpdate(m.chat, [numbersOnly], 'demote').catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
+					await naze.groupParticipantsUpdate(m.chat, [nmrnya], 'demote').catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'warn': case 'warning': {
@@ -1364,17 +1503,20 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
-					if (!db.groups[m.chat].warn[numbersOnly]) {
-						db.groups[m.chat].warn[numbersOnly] = 1
-						m.reply('Peringatan 1/4, akan dikick sewaktu waktu❗')
-					} else if (db.groups[m.chat].warn[numbersOnly] >= 3) {
-						await naze.groupParticipantsUpdate(m.chat, [numbersOnly], 'remove').catch((err) => m.reply('Gagal!'))
-						delete db.groups[m.chat].warn[numbersOnly]
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
+					if (!db.groups[m.chat].warn[nmrnya]) {
+						db.groups[m.chat].warn[nmrnya] = 1
+						m.reply('Warning 1/4, akan dikick sewaktu waktu❗')
+					} else if (db.groups[m.chat].warn[nmrnya] >= 3) {
+						await naze.groupParticipantsUpdate(m.chat, [nmrnya], 'remove').catch((err) => m.reply(mess.fail))
+						delete db.groups[m.chat].warn[nmrnya]
 					} else {
-						db.groups[m.chat].warn[numbersOnly] += 1
-						m.reply(`Peringatan ${db.groups[m.chat].warn[numbersOnly]}/4, akan dikick sewaktu waktu❗`)
+						db.groups[m.chat].warn[nmrnya] += 1
+						m.reply(`Warning ${db.groups[m.chat].warn[nmrnya]}/4, akan dikick sewaktu waktu❗`)
 					}
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'unwarn': case 'delwarn': case 'unwarning': case 'delwarning': {
@@ -1383,11 +1525,14 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const numbersOnly = text ? text.replace(/\D/g, '') + '@s.whatsapp.net' : m.quoted?.sender
-					if (db.groups[m.chat]?.warn?.[numbersOnly]) {
-						delete db.groups[m.chat].warn[numbersOnly]
+					const findJid = naze.findJidByLid(numbersOnly.replace(/[^0-9]/g, '') + '@lid', store);
+					const klss = numbersOnly.replace(/[^0-9]/g, '') + (findJid ? '@lid' :  '@s.whatsapp.net')
+					const nmrnya = naze.findJidByLid(klss, store, true)
+					if (db.groups[m.chat]?.warn?.[nmrnya]) {
+						delete db.groups[m.chat].warn[nmrnya]
 						m.reply('Berhasil Menghapus Warning!')
 					}
-				} else m.reply(`Contoh: ${prefix + command} 62xxx`)
+				} else m.reply(`Example: ${prefix + command} 62xxx`)
 			}
 			break
 			case 'setname': case 'setnamegc': case 'setsubject': case 'setsubjectgc': {
@@ -1396,8 +1541,8 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const teksnya = text ? text : m.quoted.text
-					await naze.groupUpdateSubject(m.chat, teksnya).catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} textnya`)
+					await naze.groupUpdateSubject(m.chat, teksnya).catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} textnya`)
 			}
 			break
 			case 'setdesc': case 'setdescgc': case 'setdesk': case 'setdeskgc': {
@@ -1406,8 +1551,8 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (text || m.quoted) {
 					const teksnya = text ? text : m.quoted.text
-					await naze.groupUpdateDescription(m.chat, teksnya).catch((err) => m.reply('Gagal!'))
-				} else m.reply(`Contoh: ${prefix + command} textnya`)
+					await naze.groupUpdateDescription(m.chat, teksnya).catch((err) => m.reply(mess.fail))
+				} else m.reply(`Example: ${prefix + command} textnya`)
 			}
 			break
 			case 'setppgroups': case 'setppgrup': case 'setppgc': {
@@ -1416,30 +1561,23 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				if (!m.quoted) return m.reply('Reply Gambar yang mau dipasang di Profile Bot')
 				if (!/image/.test(quoted.type)) return m.reply(`Reply Image Dengan Caption ${prefix + command}`)
-				let media = await naze.downloadAndSaveMediaMessage(quoted, 'ppgc.jpeg')
-				if (text.length > 0) {
-					let { img } = await generateProfilePicture(media)
-					await naze.query({
-						tag: 'iq',
-						attrs: {
-							target: m.chat,
-							to: '@s.whatsapp.net',
-							type: 'set',
-							xmlns: 'w:profile:picture'
-						},
-						content: [{ tag: 'picture', attrs: { type: 'image' }, content: img }]
-					})
-					await fs.unlinkSync(media)
-					m.reply('Sukses')
-				} else {
-					await naze.updateProfilePicture(m.chat, { url: media })
-					await fs.unlinkSync(media)
-					m.reply('Sukses')
-				}
+				let media = await quoted.download();
+				let { img } = await generateProfilePicture(media, text.length > 0 ? null : 512)
+				await naze.query({
+					tag: 'iq',
+					attrs: {
+						target: m.chat,
+						to: '@s.whatsapp.net',
+						type: 'set',
+						xmlns: 'w:profile:picture'
+					},
+					content: [{ tag: 'picture', attrs: { type: 'image' }, content: img }]
+				});
+				m.reply(mess.done)
 			}
 			break
 			case 'delete': case 'del': case 'd': {
-				if (!m.quoted) return m.reply('Reply pesan yang mau di delete')
+				if (!m.quoted) return m.reply(mess.quoted)
 				await naze.sendMessage(m.chat, { delete: { remoteJid: m.chat, fromMe: m.isBotAdmin ? false : true, id: m.quoted.id, participant: m.quoted.sender }})
 			}
 			break
@@ -1464,7 +1602,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				await naze.groupRevokeInvite(m.chat).then((a) => {
 					m.reply(`Sukses Menyetel Ulang, Tautan Undangan Grup ${m.metadata.subject}`)
-				}).catch((err) => m.reply('Gagal!'))
+				}).catch((err) => m.reply(mess.fail))
 			}
 			break
 			case 'group': case 'grup': case 'gc': {
@@ -1495,20 +1633,20 @@ module.exports = naze = async (naze, m, msg, store) => {
 					if (/on|true/i.test(args[1])) {
 						if (set[args[0]]) return m.reply('*Sudah Aktif Sebelumnya*')
 						set[args[0]] = true
-						m.reply('*Sukse Change To On*')
+						m.reply('*Sukses Change To On*')
 					} else if (/off|false/i.test(args[1])) {
 						set[args[0]] = false
-						m.reply('*Sukse Change To Off*')
+						m.reply('*Sukses Change To Off*')
 					} else m.reply(`❗${args[0].charAt(0).toUpperCase() + args[0].slice(1)} on/off`)
 					break
 					case 'setwelcome': case 'setleave': case 'setpromote': case 'setdemote':
 					if (args[1]) {
 						set.text[args[0]] = args.slice(1).join(' ');
 						m.reply(`Sukses Mengubah ${args[0].split('set')[1]} Menjadi:\n${set.text[args[0]]}`)
-					} else m.reply(`Example:\n${prefix + command} ${args[0]} Isi Pesannya\n\nMisal Dengan tag:\n${prefix + command} ${args[0]} Kepada @\nMaka akan Menjadi:\nKepada @0\n\nMisal dengan Tag admin:\n${prefix + command} ${args[0]} Dari @admin untuk @\nMaka akan Menjadi:\nDari @${m.sender.split('@')[0]} untuk @0\n\nMisal dengan Nama grup:\n${prefix + command} ${args[0]} Dari @admin untuk @ di @subject\nMaka akan Menjadi:\nDari @${m.sender.split('@')[0]} untuk @0 di ${m.metadata.subject}`)
+					} else m.reply(`Example:\n${prefix + command} ${args[0]} Isi Pesannya\n\nMisal Dengan tag:\n${prefix + command} ${args[0]} Kepada @\nMaka akan Menjadi:\nKepada @0\n\nMisal dengan Tag admin:\n${prefix + command} ${args[0]} Dari @admin untuk @\nMaka akan Menjadi:\nDari @${m.sender.split('@')[0]} untuk @0\n\nMisal dengan Nama grup:\n${prefix + command} ${args[0]} Dari @admin untuk @ di @subject\nMaka akan Menjadi:\nDari @${m.sender.split('@')[0]} untuk @0 di ${m.metadata.subject}`, { mentions: ['0@s.whatsapp.net'] })
 					break
 					default:
-					m.reply(`Settings Group ${m.metadata.subject}\n- open\n- close\n- join acc/reject\n- disappearing 90/7/1/off\n- antilink on/off ${set.antilink ? '🟢' : '🔴'}\n- antivirtex on/off ${set.antivirtex ? '🟢' : '🔴'}\n- antidelete on/off ${set.antidelete ? '🟢' : '🔴'}\n- welcome on/off ${set.welcome ? '🟢' : '🔴'}\n- leave on/off ${set.leave ? '🟢' : '🔴'}\n- promote on/off ${set.promote ? '🟢' : '🔴'}\n- demote on/off ${set.demote ? '🟢' : '🔴'}\n- setinfo on/off ${set.setinfo ? '🟢' : '🔴'}\n- nsfw on/off ${set.nsfw ? '🟢' : '🔴'}\n- waktusholat on/off ${set.waktusholat ? '🟢' : '🔴'}\n- antihidetag on/off ${set.antihidetag ? '🟢' : '🔴'}\n- antitagsw on/off ${set.antitagsw ? '🟢' : '🔴'}\n\n- setwelcome _textnya_\n- setleave _textnya_\n- setpromote _textnya_\n- setdemote _textnya_\n\nExample:\n${prefix + command} antilink off`)
+					m.reply(`Settings Group ${m.metadata.subject}\n- open\n- close\n- join acc/reject\n- disappearing 90/7/1/off\n- antilink on/off ${set.antilink ? '🟢' : '🔴'}\n- antivirtex on/off ${set.antivirtex ? '🟢' : '🔴'}\n- antidelete on/off ${set.antidelete ? '🟢' : '🔴'}\n- welcome on/off ${set.welcome ? '🟢' : '🔴'}\n- leave on/off ${set.leave ? '🟢' : '🔴'}\n- promote on/off ${set.promote ? '🟢' : '🔴'}\n- demote on/off ${set.demote ? '🟢' : '🔴'}\n- setinfo on/off ${set.setinfo ? '🟢' : '🔴'}\n- nsfw on/off ${set.nsfw ? '🟢' : '🔴'}\n- waktusholat on/off ${set.waktusholat ? '🟢' : '🔴'}\n- antihidetag on/off ${set.antihidetag ? '🟢' : '🔴'}\n- antitoxic on/off ${set.antitoxic ? '🟢' : '🔴'}\n- antitagsw on/off ${set.antitagsw ? '🟢' : '🔴'}\n\n- setwelcome _textnya_\n- setleave _textnya_\n- setpromote _textnya_\n- setdemote _textnya_\n\nExample:\n${prefix + command} antilink off`)
 				}
 			}
 			break
@@ -1535,17 +1673,52 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!m.isGroup) return m.reply(mess.group)
 				if (!m.isAdmin) return m.reply(mess.admin)
 				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
-				if (!m.quoted) return m.reply(`Reply pesan dengan caption ${prefix + command}`)
+				if (!m.quoted) return m.reply(mess.quoted)
 				delete m.quoted.chat
-				await naze.sendMessage(m.chat, { forward: m.quoted.fakeObj, mentions: m.metadata.participants.map(a => a.id) })
+				await naze.sendMessage(m.chat, { forward: m.quoted.fakeObj(), mentions: m.metadata.participants.map(a => a.id) })
 			}
 			break
 			case 'listonline': case 'liston': {
 				if (!m.isGroup) return m.reply(mess.group)
+				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
 				let id = args && /\d+\-\d+@g.us/.test(args[0]) ? args[0] : m.chat
 				if (!store.presences || !store.presences[id]) return m.reply('Sedang Tidak ada yang online!')
-				let online = [...Object.keys(store.presences[id]), botNumber]
-				await m.reply('List Online:\n\n' + online.map(v => setv + ' @' + v.replace(/@.+/, '')).join`\n`, { mentions: online }).catch((e) => m.reply('Sedang Tidak Ada Yang Online..'))
+				const groupPresences = store.presences[id];
+				const metadata = store.groupMetadata[id];
+				let list_online = [];
+				if (metadata && metadata.participants) {
+					for (const p of metadata.participants) {
+						if (groupPresences[p.id]) {
+							list_online.push(p.phoneNumber);
+						}
+					}
+				}
+				if (!list_online.includes(botNumber)) {
+					list_online.push(botNumber);
+				}
+				if (list_online.length === 0) return m.reply('Sedang tidak ada yang online!'); 
+				let textReply = '*List Online:*\n\n' + list_online.map(v => setv + ' @' + v.split('@')[0]).join('\n');
+				await m.reply(textReply, { mentions: list_online }).catch(() => m.reply('Gagal menampilkan list online..'));
+			}
+			break
+			case 'totalpesan': case 'totalchat': {
+				if (!m.isGroup) return m.reply(mess.group)
+				if (!m.isAdmin) return m.reply(mess.admin)
+				if (!m.isBotAdmin) return m.reply(mess.botAdmin)
+				let messageCount = {};
+				let messages = store?.messages[m.chat]?.array || [];
+				let participants = (m?.metadata?.participants?.map(p => p.phoneNumber) || store?.messages[m.chat]?.array?.map(p => p.key.participantAlt) || []).filter(p => p);
+				messages.forEach(mes => {
+					if (mes.key?.participantAlt && mes.message) {
+						messageCount[mes.key.participantAlt] = (messageCount[mes.key.participantAlt] || 0) + 1;
+					}
+				});
+				let totalMessages = Object.values(messageCount).reduce((a, b) => a + b, 0);
+				let date = new Date().toLocaleDateString('id-ID');
+				let zeroMessageUsers = participants.filter(user => !messageCount[user]).map(user => `- @${user.replace(/[^0-9]/g, '')}`);
+				let messageList = Object.entries(messageCount).map(([sender, count], index) => `${index + 1}. @${sender.replace(/[^0-9]/g, '')}: ${count} Pesan`);
+				let result = `Total Pesan ${totalMessages} dari ${participants.length} anggota\nPada tanggal ${date}:\n${messageList.join('\n')}\n\nNote: ${text.length > 0 ? `\n${zeroMessageUsers.length > 0 ? `Sisa Anggota yang tidak mengirim pesan (Sider):\n${zeroMessageUsers.join('\n')}` : 'Semua anggota sudah mengirim pesan!'}` : `\nCek Sider? ${prefix + command} --sider`}`;
+				m.reply(result)
 			}
 			break
 			
@@ -1567,23 +1740,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 					teksnya += `│• ${i + 1}. @${entries[i].split('@')[0]}\n│• Balance : ${db.users[entries[i]].money.toLocaleString('id-ID')}\n│\n`
 				}
 				m.reply(teksnya + '╰──────❍');
-			}
-			break
-			case 'totalpesan': {
-				let messageCount = {};
-				let messages = store?.messages[m.chat]?.array || [];
-				let participants = m?.metadata?.participants?.map(p => p.id) || store?.messages[m.chat]?.array?.map(p => p.key.participant) || [];
-				messages.forEach(mes => {
-					if (mes.key?.participant && mes.message) {
-						messageCount[mes.key.participant] = (messageCount[mes.key.participant] || 0) + 1;
-					}
-				});
-				let totalMessages = Object.values(messageCount).reduce((a, b) => a + b, 0);
-				let date = new Date().toLocaleDateString('id-ID');
-				let zeroMessageUsers = participants.filter(user => !messageCount[user]).map(user => `- @${user.replace(/[^0-9]/g, '')}`);
-				let messageList = Object.entries(messageCount).map(([sender, count], index) => `${index + 1}. @${sender.replace(/[^0-9]/g, '')}: ${count} Pesan`);
-				let result = `Total Pesan ${totalMessages} dari ${participants.length} anggota\nPada tanggal ${date}:\n${messageList.join('\n')}\n\nNote: ${text.length > 0 ? `\n${zeroMessageUsers.length > 0 ? `Sisa Anggota yang tidak mengirim pesan (Sider):\n${zeroMessageUsers.join('\n')}` : 'Semua anggota sudah mengirim pesan!'}` : `\nCek Sider? ${prefix + command} --sider`}`;
-				m.reply(result)
 			}
 			break
 			case 'req': case 'request': {
@@ -1618,6 +1774,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'runtime': case 'tes': case 'bot': {
+				if (!args[0] && !args[1]) return m.reply(`*Bot Telah Online Selama*\n*${runtime(process.uptime())}*`);
 				switch(args[0]) {
 					case 'mode': case 'public': case 'self':
 					if (!isCreator) return m.reply(mess.owner)
@@ -1626,44 +1783,78 @@ module.exports = naze = async (naze, m, msg, store) => {
 						naze.public = set.public = true
 						set.grouponly = true
 						set.privateonly = true
-						m.reply('*Sukse Change To Public Usage*')
+						m.reply('*Sukses Change To Public Usage*')
 					} else if (args[1] == 'self') {
 						set.grouponly = false
 						set.privateonly = false
 						naze.public = set.public = false
-						m.reply('*Sukse Change To Self Usage*')
+						m.reply('*Sukses Change To Self Usage*')
 					} else if (args[1] == 'group') {
 						set.grouponly = true
 						set.privateonly = false
-						m.reply('*Sukse Change To Group Only*')
+						m.reply('*Sukses Change To Group Only*')
 					} else if (args[1] == 'private') {
 						set.grouponly = false
 						set.privateonly = true
-						m.reply('*Sukse Change To Private Only*')
+						m.reply('*Sukses Change To Private Only*')
 					} else m.reply('Mode self/public/group/private/all')
 					break
-					case 'anticall': case 'autobio': case 'autoread': case 'autotyping': case 'readsw': case 'multiprefix': case 'antispam':
+					case 'log': case 'anticall': case 'autobio': case 'autoread': case 'autotyping': case 'readsw': case 'multiprefix': case 'antispam': case 'didyoumean':
 					if (!isCreator) return m.reply(mess.owner)
 					if (args[1] == 'on') {
 						if (set[args[0]]) return m.reply('*Sudah Aktif Sebelumnya*')
 						set[args[0]] = true
-						m.reply('*Sukse Change To On*')
+						m.reply('*Sukses Change To On*')
 					} else if (args[1] == 'off') {
 						set[args[0]] = false
-						m.reply('*Sukse Change To Off*')
+						m.reply('*Sukses Change To Off*')
 					} else m.reply(`${args[0].charAt(0).toUpperCase() + args[0].slice(1)} on/off`)
 					break
 					case 'set': case 'settings':
 					let settingsBot = Object.entries(set).map(([key, value]) => {
-						let list = key == 'status' ? new Date(value).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : (typeof value === 'boolean') ? (value ? 'on🟢' : 'off🔴') : value;
+						let list = key == 'status' ? new Date(value).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : (typeof value === 'boolean') ? (value ? 'on🟢' : 'off🔴') : (typeof value === 'object') ? `\n${value.map(a => '- ' + a).join('\n')}` : value;
 						return `- ${key.charAt(0).toUpperCase() + key.slice(1)} : ${list}`;
 					}).join('\n');
 					m.reply(`Settings Bot @${botNumber.split('@')[0]}\n${settingsBot}\n\nExample: ${prefix + command} mode`);
 					break
-					default:
-					if (args[0] || args[1]) m.reply(`*Please Sellect Settings :*\n- Mode : *${prefix + command} mode self/public*\n- Anti Call : *${prefix + command} anticall on/off*\n- Auto Bio : *${prefix + command} autobio on/off*\n- Auto Read : *${prefix + command} autoread on/off*\n- Auto Typing : *${prefix + command} autotyping on/off*\n- Read Sw : *${prefix + command} readsw on/off*\n- Multi Prefix : *${prefix + command} multiprefix on/off*`)
+					case 'author':
+					if (!isCreator) return m.reply(mess.owner)
+					if (args[1] == 'prefix') {
+						set.authorPrefix = '.';
+						m.reply(mess.done)
+					} else {
+						set.authorPrefix = '';
+						m.reply(mess.done)
+					}
+					break
+					default: {
+						let menuList = `*⚙️ SETTINGS BOT ⚙️*
+					
+Select Bot Settings:
+
+*👥 Mode Penggunaan:*
+- Mode Bot : *${prefix + command} mode [public/self/group/private]*
+
+*🎛️ Fitur Otomatis (on/off):*
+- Anti Call : *${prefix + command} anticall [on/off]*
+- Anti Spam : *${prefix + command} antispam [on/off]*
+- Auto Bio : *${prefix + command} autobio [on/off]*
+- Auto Read : *${prefix + command} autoread [on/off]*
+- Auto Typing : *${prefix + command} autotyping [on/off]*
+- Read Status/SW : *${prefix + command} readsw [on/off]*
+
+*🛠️ System Settings:*
+- Multi Prefix : *${prefix + command} multiprefix [on/off]*
+- Did You Mean : *${prefix + command} didyoumean [on/off]*
+- Log Console : *${prefix + command} log [on/off]*
+- Author Prefix : *${prefix + command} author [prefix/off]*
+
+*📊 Info & Status:*
+- Cek Semua Setting : *${prefix + command} set*
+- Cek Runtime Bot : *${prefix + command}*`;
+						if (args[0] || args[1]) m.reply(menuList);
+					}
 				}
-				if (!args[0] && !args[1]) return m.reply(`*Bot Telah Online Selama*\n*${runtime(process.uptime())}*`)
 			}
 			break
 			case 'ping': case 'botstatus': case 'statusbot': {
@@ -1725,7 +1916,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'readviewonce': case 'readviewone': case 'rvo': {
-				if (!m.quoted) return m.reply(`Reply view once message\nExample: ${prefix + command}`)
+				if (!m.quoted) return m.reply(mess.quoted)
 				try {
 					if (m.quoted.msg.viewOnce) {
 						delete m.quoted.chat
@@ -1800,7 +1991,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'setcmd': case 'addcmd': {
-				if (!m.quoted) return m.reply('Reply Pesannya!')
+				if (!m.quoted) return m.reply(mess.quoted)
 				if (!m.quoted.fileSha256) return m.reply('SHA256 Hash Missing!')
 				if (!text) return m.reply(`Example : ${prefix + command} CMD Name`)
 				let hash = m.quoted.fileSha256.toString('base64')
@@ -1811,16 +2002,16 @@ module.exports = naze = async (naze, m, msg, store) => {
 					at: + new Date,
 					text
 				}
-				m.reply('Done!')
+				m.reply(mess.done)
 			}
 			break
 			case 'delcmd': {
-				if (!m.quoted) return m.reply('Reply Pesannya!')
+				if (!m.quoted) return m.reply(mess.quoted)
 				if (!m.quoted.fileSha256) return m.reply('SHA256 Hash Missing!')
 				let hash = m.quoted.fileSha256.toString('base64')
 				if (global.db.cmd[hash] && global.db.cmd[hash].locked) return m.reply('You have no permission to change this sticker command')
 				delete global.db.cmd[hash];
-				m.reply('Done')
+				m.reply(mess.done)
 			}
 			break
 			case 'listcmd': {
@@ -1830,7 +2021,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'lockcmd': case 'unlockcmd': {
 				if (!isCreator) return m.reply(mess.owner)
-				if (!m.quoted) return m.reply('Reply Pesannya!')
+				if (!m.quoted) return m.reply(mess.quoted)
 				if (!m.quoted.fileSha256) return m.reply('SHA256 Hash Missing!')
 				let hash = m.quoted.fileSha256.toString('base64')
 				if (!(hash in global.db.cmd)) return m.reply('You have no permission to change this sticker command')
@@ -1838,15 +2029,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'q': case 'quoted': {
-				if (!m.quoted) return m.reply('Reply Pesannya!')
+				if (!m.quoted) return m.reply(mess.quoted)
 				if (text) {
 					delete m.quoted.chat
 					await m.reply({ forward: m.quoted })
 				} else {
-					const anu = await m.getQuotedObj()
-					if (!anu) return m.reply('Format Tidak Tersedia!')
-					if (!anu.quoted) return m.reply('Pesan Yang Anda Reply Tidak Mengandung Reply')
-					await naze.relayMessage(m.chat, { [anu.quoted.type]: anu.quoted.msg }, {})
+					try {
+						const anu = await m.getQuotedObj()
+						if (!anu) return m.reply('Format Tidak Tersedia!')
+						if (!anu.quoted) return m.reply('Pesan Yang Anda Reply Tidak Mengandung Reply')
+						await naze.relayMessage(m.chat, { [anu.quoted.type]: anu.quoted.msg }, {})
+					} catch (e) {
+						return m.reply('Format Tidak Tersedia!')
+					}
 				}
 			}
 			break
@@ -1859,7 +2054,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (teks1) {
 					const tujuan = teks1.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
 					const onWa = await naze.onWhatsApp(tujuan)
-					if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+					if (!onWa.length > 0) return m.reply(mess.onWa)
 					menfes[m.sender] = {
 						tujuan: tujuan,
 						nama: teks2 ? teks2 : 'Orang'
@@ -1911,13 +2106,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} halo ngab\nWith Prompt: ${prefix + command} halo ngab|Kamu adalah assisten yang siap membantu dalam hal apapun yang ku minta.\n\nUntuk Menghapus room: ${prefix + 'del' + command}`)
 				let [teks1, teks2] = text.split`|`
 				chat_ai[m.sender] = [{ role: 'system', content: teks2 || '' }, { role: 'user', content: text.split`|` ? teks1 : text || '' }]
-				let hasil;
-				try {
-					hasil = await gptLogic(chat_ai[m.sender], budy)
-				} catch (e) {
-					hasil = await yanzGpt(chat_ai[m.sender])
-				}
-				const response = hasil?.choices?.[0]?.message?.content || hasil || 'Maaf, saya tidak mengerti.';
+				let hasil = await fetchApi('/ai/chat4', {
+					messages: chat_ai[m.sender],
+					prompt: budy
+				}, { method: 'POST' });
+				const response = hasil?.result?.message || 'Maaf, saya tidak mengerti.';
 				chat_ai[m.sender].push({ role: 'assistant', content: response });
 				await m.reply(response)
 			}
@@ -1933,7 +2126,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				const nmrnya = text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.sender
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+				if (!onWa.length > 0) return m.reply(mess.onWa)
 				await JadiBot(naze, nmrnya, m, store)
 				m.reply(`Gunakan ${prefix}stopjadibot\nUntuk Berhenti`)
 				setLimit(m, db)
@@ -1942,7 +2135,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'stopjadibot': case 'deljadibot': {
 				const nmrnya = text ? text.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : m.sender
 				const onWa = await naze.onWhatsApp(nmrnya)
-				if (!onWa.length > 0) return m.reply('Nomer Tersebut Tidak Terdaftar Di Whatsapp!')
+				if (!onWa.length > 0) return m.reply(mess.onWa)
 				await StopJadiBot(naze, nmrnya, m)
 			}
 			break
@@ -1969,83 +2162,112 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'toaud': case 'toaudio': {
 				if (!/video|audio/.test(mime)) return m.reply(`Kirim/Reply Video/Audio Yang Ingin Dijadikan Audio Dengan Caption ${prefix + command}`)
-				m.reply(mess.wait)
-				let media = await quoted.download()
-				let audio = await toAudio(media, 'mp4')
-				await m.reply({ audio: audio, mimetype: 'audio/mpeg'})
+				m.react('⏳')
+				let media = await naze.downloadAndSaveMediaMessage(qmsg)
+				try {
+					let audio = await toAudio(media, 'mp4')
+					await m.reply({ audio: { url: audio }, mimetype: 'audio/mpeg'})
+					if (fs.existsSync(audio)) fs.unlinkSync(audio)
+				} finally {
+					if (fs.existsSync(media)) fs.unlinkSync(media)
+				}
 			}
 			break
 			case 'tomp3': {
 				if (!/video|audio/.test(mime)) return m.reply(`Kirim/Reply Video/Audio Yang Ingin Dijadikan Audio Dengan Caption ${prefix + command}`)
-				m.reply(mess.wait)
-				let media = await quoted.download()
-				let audio = await toAudio(media, 'mp4')
-				await m.reply({ document: audio, mimetype: 'audio/mpeg', fileName: `Convert By Naze Bot.mp3`})
+				m.react('⏳')
+				let media = await naze.downloadAndSaveMediaMessage(qmsg)
+				try {
+					let audio = await toAudio(media, 'mp4')
+					await m.reply({ document: { url: audio }, mimetype: 'audio/mpeg', fileName: `Convert By Naze Bot.mp3`})
+					if (fs.existsSync(audio)) fs.unlinkSync(audio)
+				} finally {
+					if (fs.existsSync(media)) fs.unlinkSync(media)
+				}
 			}
 			break
 			case 'tovn': case 'toptt': case 'tovoice': {
 				if (!/video|audio/.test(mime)) return m.reply(`Kirim/Reply Video/Audio Yang Ingin Dijadikan Audio Dengan Caption ${prefix + command}`)
-				m.reply(mess.wait)
-				let media = await quoted.download()
-				let audio = await toPTT(media, 'mp4')
-				await m.reply({ audio: audio, mimetype: 'audio/ogg; codecs=opus', ptt: true })
+				m.react('⏳')
+				let media = await naze.downloadAndSaveMediaMessage(qmsg)
+				try {
+					let audioBuffer = await toPTT(media, 'mp4')
+					await m.reply({ audio: audioBuffer, mimetype: 'audio/ogg; codecs=opus', ptt: true });
+				} finally {
+					if (fs.existsSync(media)) fs.unlinkSync(media)
+				}
 			}
 			break
 			case 'togif': {
 				if (!/webp|video/.test(mime)) return m.reply(`Reply Video/Stiker dengan caption *${prefix + command}*`)
-				m.reply(mess.wait)
+				m.react('⏳')
 				let media = await naze.downloadAndSaveMediaMessage(qmsg)
-				let ran = `./database/sampah/${getRandom('.gif')}`;
-				exec(`convert ${media} ${ran}`, (err) => {
-					fs.unlinkSync(media)
-					if (err) return m.reply('Gagal❗')
-					let buffer = fs.readFileSync(ran)
-					m.reply({ video: buffer, gifPlayback: true })
-					fs.unlinkSync(ran)
+				let ran = `./database/temp/${getRandom('.mp4')}`;
+				exec(`ffmpeg -y -i "${media}" -an -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p -c:v libx264 -preset veryfast "${ran}"`, async (err) => {
+					try {
+						if (err) return m.reply(mess.fail);
+						await m.reply({ video: { url: ran }, gifPlayback: true, caption: mess.done, gifAttribution: pickRandom(['TENOR','GIPHY']) })
+					} finally {
+						if (fs.existsSync(media)) fs.unlinkSync(media)
+						if (fs.existsSync(ran)) fs.unlinkSync(ran)
+					}
 				})
 			}
 			break
 			case 'toimage': case 'toimg': {
 				if (!/webp|video|image/.test(mime)) return m.reply(`Reply Video/Stiker dengan caption *${prefix + command}*`)
-				m.reply(mess.wait)
+				m.react('⏳')
 				let media = await naze.downloadAndSaveMediaMessage(qmsg)
-				let ran = `./database/sampah/${getRandom('.png')}`;
-				exec(`convert ${media}[0] ${ran}`, (err) => {
-					fs.unlinkSync(media)
-					if (err) return m.reply('Gagal❗')
-					let buffer = fs.readFileSync(ran)
-					m.reply({ image: buffer })
-					fs.unlinkSync(ran)
+				let ran = `./database/temp/${getRandom('.png')}`;
+				exec(`ffmpeg -y -i "${media}" -vframes 1 "${ran}"`, async (err) => {
+					try {
+						if (err) return m.reply(mess.fail);
+						await m.reply({ image: { url: ran }, caption: mess.done })
+					} finally {
+						if (fs.existsSync(media)) fs.unlinkSync(media)
+						if (fs.existsSync(ran)) fs.unlinkSync(ran)
+					}
 				})
 			}
 			break
 			case 'toptv': {
 				if (!/video/.test(mime)) return m.reply(`Kirim/Reply Video Yang Ingin Dijadikan PTV Message Dengan Caption ${prefix + command}`)
 				if ((m.quoted ? m.quoted.type : m.type) === 'videoMessage') {
-					const anu = await quoted.download()
-					const message = await generateWAMessageContent({ video: anu }, { upload: naze.waUploadToServer })
-					await naze.relayMessage(m.chat, { ptvMessage: message.videoMessage }, {})
+					m.react('⏳')
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						const message = await generateWAMessageContent({ video: { url: media } }, { upload: naze.waUploadToServer })
+						await naze.relayMessage(m.chat, { ptvMessage: message.videoMessage }, {})
+					} finally {
+						if (fs.existsSync(media)) fs.unlinkSync(media)
+					}
 				} else m.reply('Reply Video Yang Mau Di Ubah Ke PTV Message!')
 			}
 			break
 			case 'tourl': {
-				try {
-					if (/webp|video|sticker|audio|jpg|jpeg|png/.test(mime)) {
-						m.reply(mess.wait)
-						let media = await quoted.download()
-						let anu = await UguuSe(media)
+				if (/webp|video|sticker|audio|jpg|jpeg|png/.test(mime)) {
+					m.react('⏳')
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						let anu = await UguuSe(media);
 						m.reply('Url : ' + anu.url)
-					} else m.reply('Send Media yg ingin di Upload!')
-				} catch (e) {
-					m.reply('Server Uploader sedang offline!')
-				}
+					} finally {
+						if (fs.existsSync(media)) fs.unlinkSync(media)
+					}
+				} else m.reply(mess.media)
 			}
 			break
 			case 'texttospech': case 'tts': case 'tospech': {
+				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply('Mana text yg mau diubah menjadi audio?')
-				let { tts } = require('./lib/tts')
-				let anu = await tts(text)
-				m.reply({ audio: anu, ptt: true, mimetype: 'audio/mpeg' })
+				let anu
+				try {
+					anu = await fetchApi('/tools/tts', { text }, { stream: true });
+					m.reply({ audio: { url: anu }, ptt: true, mimetype: 'audio/mpeg' });
+					setLimit(m, db)
+				} finally {
+					if (fs.existsSync(anu)) fs.unlinkSync(anu);
+				}
 			}
 			break
 			case 'translate': case 'tr': {
@@ -2054,11 +2276,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 					m.reply(list_tr)
 				} else {
 					if (!m.quoted && (!text|| !args[1])) return m.reply(`Kirim/reply text dengan caption ${prefix + command}`)
-					let lang = args[0] ? args[0] : 'id'
+					let lang = args[0] ? args[0] : locale
 					let teks = args[1] ? args.slice(1).join(' ') : m.quoted.text
 					try {
-						let hasil = await translate(teks, { to: lang, autoCorrect: true })
-						m.reply(`To : ${lang}\n${hasil[0]}`)
+						let hasil = await fetchApi('/tools/translate', { text: teks, lang });
+						m.reply(`To : ${lang}\n${hasil.result.translate}`)
 					} catch (e) {
 						m.reply(`Lang *${lang}* Tidak Di temukan!\nSilahkan lihat list, ${prefix + command} list`)
 					}
@@ -2066,30 +2288,51 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'toqr': case 'qr': {
+				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Ubah Text ke Qr dengan *${prefix + command}* textnya`)
-				m.reply(mess.wait)
-				await m.reply({ image: { url: 'https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=' + text }, caption: 'Nih Bro' })
+				m.react('⏳')
+				let anu;
+				try {
+					anu = await fetchApi('/tools/to-qr', { data: text }, { stream: true });
+					await m.reply({ image: { url: anu }, caption: 'Nih Bro' });
+					setLimit(m, db)
+				} finally {
+					if (fs.existsSync(anu)) fs.unlinkSync(anu);
+				}
 			}
 			break
 			case 'tohd': case 'remini': case 'hd': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (/image/.test(mime)) {
+					m.react('⏳')
+					let hasil;
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
 					try {
-						let media = await quoted.download()
-						let hasil = await remini(media, 'enhance')
-						m.reply({ image: hasil, caption: 'Done' })
+						const form = new FormData();
+						form.append('buffer', fs.createReadStream(media), {
+							filename: 'image.jpg',
+							contentType: 'image/jpeg'
+						});
+						hasil = await fetchApi('/tools/remini', form, { stream: true });
+						await m.reply({ image: { url: hasil }, caption: mess.done })
 						setLimit(m, db)
+						if (fs.existsSync(media)) fs.unlinkSync(media);
+						if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
 					} catch (e) {
-						let media = await naze.downloadAndSaveMediaMessage(qmsg)
-						let ran = `./database/sampah/${getRandom('.jpg')}`;
+						if (hasil && fs.existsSync(hasil)) fs.unlinkSync(hasil);
+						let ran = `./database/temp/${getRandom('.jpg')}`;
 						const scaleFactor = isNaN(parseInt(text)) ? 4 : parseInt(text) < 10 ? parseInt(text) : 4;
 						exec(`ffmpeg -i "${media}" -vf "scale=iw*${scaleFactor}:ih*${scaleFactor}:flags=lanczos" -q:v 1 "${ran}"`, async (err, stderr, stdout) => {
-							fs.unlinkSync(media)
-							if (err) return m.reply(String(err))
-							let buff = fs.readFileSync(ran)
-							await naze.sendMedia(m.chat, buff, '', 'Done', m);
-							fs.unlinkSync(ran)
-							setLimit(m, db)
+							try {
+								if (err) return m.reply(mess.fail)
+								await naze.sendMessage(m.chat, { image: { url: ran }, caption: mess.done }, { quoted: m });
+								setLimit(m, db)
+							} catch (e) {
+								console.log(e);
+							} finally {
+								if (fs.existsSync(ran)) fs.unlinkSync(ran)
+								if (fs.existsSync(media)) fs.unlinkSync(media) 
+							}
 						});
 					}
 				} else m.reply(`Kirim/Reply Gambar dengan format\nExample: ${prefix + command}`)
@@ -2098,34 +2341,57 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'dehaze': case 'colorize': case 'colorfull': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (/image/.test(mime)) {
-					let media = await quoted.download()
-					remini(media, 'dehaze').then(a => {
-						m.reply({ image: a, caption: 'Done' })
+					let hasil;
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						const form = new FormData();
+						form.append('buffer', fs.createReadStream(media), {
+							filename: 'image.jpg',
+							contentType: 'image/jpeg'
+						});
+						hasil = await fetchApi('/tools/recolor', form, { stream: true });
+						await m.reply({ image: { url: hasil }, caption: mess.done });
 						setLimit(m, db)
-					}).catch(e => m.reply('Server sedang offline!'));
+					} finally {
+						if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
+						if (fs.existsSync(media)) fs.unlinkSync(media);
+					}
 				} else m.reply(`Kirim/Reply Gambar dengan format\nExample: ${prefix + command}`)
 			}
 			break
 			case 'hitamkan': case 'toblack': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (/image/.test(mime)) {
-					let media = await quoted.download()
-					hitamkan(media, 'hitam').then(a => {
-						m.reply({ image: a, caption: 'Done' })
+					let hasil;
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						const form = new FormData();
+						form.append('style', 'summer');
+					    form.append('buffer', fs.createReadStream(media), {
+							filename: 'image.jpg',
+							contentType: 'image/jpeg'
+						});
+						hasil = await fetchApi('/create/skin-tone', form, { stream: true });
+						m.reply({ image: { url: hasil }, caption: mess.done });
 						setLimit(m, db)
-					}).catch(e => m.reply('Server sedang offline!'));
+					} finally {
+						if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
+						if (fs.existsSync(media)) fs.unlinkSync(media)
+					}
 				} else m.reply(`Kirim/Reply Gambar dengan format\nExample: ${prefix + command}`)
 			}
 			break
 			case 'ssweb': {
 				if (!isPremium) return m.reply(mess.prem)
 				if (!text) return m.reply(`Example: ${prefix + command} https://github.com/nazedev/naze-md`)
+				let anu = 'https://' + text.replace(/^https?:\/\//, '')
+				let hasil;
 				try {
-					let anu = 'https://' + text.replace(/^https?:\/\//, '')
-					await m.reply({ image: { url: 'https://image.thum.io/get/width/1900/crop/1000/fullpage/' + anu }, caption: 'Done' })
+					hasil = await fetchApi('/tools/ss', { url: anu }, { stream: true });
+					await m.reply({ image: { url: hasil }, caption: mess.done });
 					setLimit(m, db)
-				} catch (e) {
-					m.reply('Server SS web Sedang Offline!')
+				} finally {
+					if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
 				}
 			}
 			break
@@ -2140,13 +2406,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!/sticker|webp/.test(quoted.type)) return m.reply(`Reply sticker\nDengan caption ${prefix + command}`)
 				const img = new webp.Image()
 				await img.load(await m.quoted.download())
-				m.reply(util.format(JSON.parse(img.exif.slice(22).toString())))
+				if (!img.exif) return m.reply('Stiker ini tidak memiliki metadata/EXIF sama sekali.');
+				try {
+					const exifData = JSON.parse(img.exif.slice(22).toString());
+					m.reply(util.format(exifData))
+				} catch (e) {
+					m.reply(`Stiker memiliki EXIF, tapi formatnya bukan JSON yang valid:\n\n${img.exif.toString()}`);
+				}
 			}
 			break
 			case 'cuaca': case 'weather': {
 				if (!text) return m.reply(`Example: ${prefix + command} jakarta`)
 				try {
-					let data = await fetchJson(`https://api.openweathermap.org/data/2.5/weather?q=${text}&units=metric&appid=060a6bcfa19809c2cd4d97a212b19273&language=en`)
+					let { result: data } = await fetchApi('/tools/cuaca', { city: text });
 					m.reply(`*🏙 Cuaca Kota ${data.name}*\n\n*🌤️ Cuaca :* ${data.weather[0].main}\n*📝 Deskripsi :* ${data.weather[0].description}\n*🌡️ Suhu Rata-rata :* ${data.main.temp} °C\n*🤔 Terasa Seperti :* ${data.main.feels_like} °C\n*🌬️ Tekanan :* ${data.main.pressure} hPa\n*💧 Kelembapan :* ${data.main.humidity}%\n*🌪️ Kecepatan Angin :* ${data.wind.speed} Km/h\n*📍Lokasi :*\n- *Bujur :* ${data.coord.lat}\n- *Lintang :* ${data.coord.lon}\n*🌏 Negara :* ${data.sys.country}`)
 				} catch (e) {
 					m.reply('Kota Tidak Di Temukan!')
@@ -2155,35 +2427,38 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'sticker': case 'stiker': case 's': case 'stickergif': case 'stikergif': case 'sgif': case 'stickerwm': case 'swm': case 'curi': case 'colong': case 'take': case 'stickergifwm': case 'sgifwm': {
 				if (!/image|video|sticker/.test(quoted.type)) return m.reply(`Kirim/reply gambar/video/gif dengan caption ${prefix + command}\nDurasi Image/Video/Gif 1-9 Detik`)
-				let media = await quoted.download()
+				let media = await naze.downloadAndSaveMediaMessage(qmsg);
 				let teks1 = text.split`|`[0] ? text.split`|`[0] : packname
 				let teks2 = text.split`|`[1] ? text.split`|`[1] : author
 				if (/image|webp/.test(mime)) {
-					m.reply(mess.wait)
+					m.react('⏳')
 					await naze.sendAsSticker(m.chat, media, m, { packname: teks1, author: teks2 })
 				} else if (/video/.test(mime)) {
 					if ((qmsg).seconds > 11) return m.reply('Maksimal 10 detik!')
-					m.reply(mess.wait)
+					m.react('⏳')
 					await naze.sendAsSticker(m.chat, media, m, { packname: teks1, author: teks2 })
 				} else m.reply(`Kirim/reply gambar/video/gif dengan caption ${prefix + command}\nDurasi Video/Gif 1-9 Detik`)
 			}
 			break
 			case 'smeme': case 'stickmeme': case 'stikmeme': case 'stickermeme': case 'stikermeme': {
+				//if (!isPremium) return m.reply(mess.prem)
+				if (!isLimit) return m.reply(mess.limit)
+				if (!/image|webp/.test(mime)) return m.reply(`Kirim/reply image/sticker\nDengan caption ${prefix + command} atas|bawah`)
+				if (!text) return m.reply(`Kirim/reply image/sticker dengan caption ${prefix + command} atas|bawah`)
+				m.react('⏳')
+				let atas = text.split`|`[0] ? text.split`|`[0] : '-'
+				let bawah = text.split`|`[1] ? text.split`|`[1] : '-'
+				let media = await naze.downloadAndSaveMediaMessage(qmsg)
 				try {
-					//if (!isPremium) return m.reply(mess.prem)
-					if (!isLimit) return m.reply(mess.limit)
-					if (!/image|webp/.test(mime)) return m.reply(`Kirim/reply image/sticker\nDengan caption ${prefix + command} atas|bawah`)
-					if (!text) return m.reply(`Kirim/reply image/sticker dengan caption ${prefix + command} atas|bawah`)
-					m.reply(mess.wait)
-					let atas = text.split`|`[0] ? text.split`|`[0] : '-'
-					let bawah = text.split`|`[1] ? text.split`|`[1] : '-'
-					let media = await quoted.download()
-					let mem = await UguuSe(media)
-					let smeme = `https://api.memegen.link/images/custom/${encodeURIComponent(atas)}/${encodeURIComponent(bawah)}.png?background=${mem.url}`
+					let mem = await UguuSe(media);
+					let smeme = await fetchApi('/create/meme2', { url: mem.url, text: atas, text2: bawah }, { stream: true });
 					await naze.sendAsSticker(m.chat, smeme, m, { packname, author })
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Server Meme Sedang Offline!')
+					console.log(e)
+					m.reply(mess.fail)
+				} finally {
+					if (fs.existsSync(media)) fs.unlinkSync(media)
 				}
 			}
 			break
@@ -2192,57 +2467,135 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} 😅+🤔`)
 				let [emoji1, emoji2] = text.split`+`
 				if (!emoji1 && !emoji2) return m.reply(`Example: ${prefix + command} 😅+🤔`)
+				let { result } = await fetchApi('/tools/emojimix', { emoji1, emoji2 });
+				if (result.length < 1) return m.reply(`Mix Emoji ${text} Tidak Ditemukan!`)
+				for (let res of result) {
+					await naze.sendAsSticker(m.chat, res.url, m, { packname, author })
+				}
+				setLimit(m, db)
+			}
+			break
+			case 'iqc': {
+				if (!isLimit) return m.reply(mess.limit)
+				if (!text && (!m.quoted || !m.quoted.text)) return m.reply(`Kirim/reply pesan *${prefix + command}* Teksnya`)
+				m.react('⏳')
+				let queryText = text ? text : m.quoted.text;
+				if (queryText.length >= 200) return m.reply('Max 200 Length!')
+				let res;
 				try {
-					let anu = await axios.get(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`)
-					if (anu.data.results.length < 1) return m.reply(`Mix Emoji ${text} Tidak Ditemukan!`)
-					for (let res of anu.data.results) {
-						await naze.sendAsSticker(m.chat, res.url, m, { packname, author })
-					}
+					res = await fetchApi('/create/iqc', { text: queryText }, { stream: true });
+					await m.reply({ image: { url: res }, caption: mess.done })
 					setLimit(m, db)
-				} catch (e) {
-					m.reply('Gagal Mix Emoji!')
+				} finally {
+					if (fs.existsSync(res)) fs.unlinkSync(res);
 				}
 			}
 			break
-			case 'qc': case 'quote': case 'fakechat': {
+			case 'qc':
+			case 'quote':
+			case 'fakechat': {
 				if (!isLimit) return m.reply(mess.limit)
-				if (!text && !m.quoted) return m.reply(`Kirim/reply pesan *${prefix + command}* Teksnya`)
+				if (!text && !m.quoted) return m.reply(`Kirim / reply pesan untuk *${prefix + command}*`)
 				try {
-					let ppnya = await naze.profilePictureUrl(m.sender, 'image').catch(() => 'https://i.pinimg.com/564x/8a/e9/e9/8ae9e92fa4e69967aa61bf2bda967b7b.jpg');
-					let res = await quotedLyo(text, m.pushName, ppnya);
-					await naze.sendAsSticker(m.chat, Buffer.from(res.result.image, 'base64'), m, { packname, author })
-					setLimit(m, db)
+					let medianya;
+					let quotedMedianya;
+					let mediaPath;
+					let quotedMediaPath;
+					let ppUrl = await naze.profilePictureUrl(m.sender, 'image').catch(() => 'https://i.pinimg.com/564x/8a/e9/e9/8ae9e92fa4e69967aa61bf2bda967b7b.jpg');
+					const senderName = m.pushName || store.contacts?.[m.sender]?.name || '+' + m.sender.split('@')[0]
+					const quotedName = store.contacts?.[m.quoted?.sender]?.name || '+' + (m.quoted?.sender || '').split('@')[0]
+					try {
+						if (m.isMedia) {
+							mediaPath = await naze.downloadAndSaveMediaMessage(m);
+							medianya = await UguuSe(mediaPath); 
+						}
+						if (m.quoted?.isMedia) {
+							quotedMediaPath = await naze.downloadAndSaveMediaMessage(m.quoted);
+							quotedMedianya = await UguuSe(quotedMediaPath);
+						}
+						const payload = {
+							type: 'quote',
+							format: 'png',
+							backgroundColor: '#FFFFFF',
+							width: 512,
+							height: 768,
+							scale: 2,
+							messages: [{
+								entities: [],
+								...(medianya?.url ? { media: { url: medianya.url }} : {}),
+								avatar: true,
+								from: {
+									id: 1,
+									name: senderName,
+									photo: {
+										url: ppUrl
+									}
+								},
+								text,
+								replyMessage: m.quoted ? {
+									name: quotedName || '',
+									text: m.quoted.text || '',
+									...(quotedMedianya?.url ? { media: { url: quotedMedianya.url }} : {}),
+									chatId: Math.floor(Math.random() * 9999999)
+								} : {},
+							}]
+						};
+						let res = await fetchApi('/create/qc', payload, { method: 'POST', buffer: true });
+						await naze.sendAsSticker(m.chat, Buffer.from(res, 'base64'), m, { packname, author });
+						setLimit(m, db);
+					} finally {
+						if (mediaPath && fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath);
+						if (quotedMediaPath && fs.existsSync(quotedMediaPath)) fs.unlinkSync(quotedMediaPath);
+					}
 				} catch (e) {
-					m.reply('Server Create Sedang Offline!')
+					console.log(e)
+					m.reply(mess.fail)
 				}
 			}
 			break
 			case 'brat': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text && (!m.quoted || !m.quoted.text)) return m.reply(`Kirim/reply pesan *${prefix + command}* Teksnya`)
+				let queryText = text ? text : m.quoted.text;
+				if (queryText.length >= 200) return m.reply('Max 200 Length!')
 				try {
-					await naze.sendAsSticker(m.chat, 'https://aqul-brat.hf.space/?text=' + encodeURIComponent(text || m.quoted.text), m)
+					let res = await fetchApi('/create/brat', { text: queryText }, { stream: true });
+					await naze.sendAsSticker(m.chat, res, m)
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Server Brat Sedang Offline!')
+					try {
+						let res = await fetchApi('/create/brat3', { text: queryText }, { stream: true });
+						await naze.sendAsSticker(m.chat, res, m)
+						setLimit(m, db)
+					} catch (e) {
+						console.log(e)
+						m.reply(mess.fail)
+					}
 				}
 			}
 			break
 			case 'bratvid': case 'bratvideo': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text && (!m.quoted || !m.quoted.text)) return m.reply(`Kirim/reply pesan *${prefix + command}* Teksnya`)
+				m.react('⏳')
 				const teks = (m.quoted ? m.quoted.text : text).split(' ');
-				const tempDir = path.join(process.cwd(), 'database/sampah');
+				if (teks.length >= 200) return m.reply('Max 200 Length!')
+				const tempDir = path.join(process.cwd(), 'database/temp');
+				const framePaths = []; 
+				const fileListPath = path.join(tempDir, `${time + '-' + m.sender}.txt`);
+				const outputVideoPath = path.join(tempDir, `${time + '-' + m.sender}-output.mp4`);
 				try {
-					const framePaths = [];
 					for (let i = 0; i < teks.length; i++) {
 						const currentText = teks.slice(0, i + 1).join(' ');
-						let res = await getBuffer('https://aqul-brat.hf.space/?text=' + encodeURIComponent(currentText));
-						const framePath = path.join(tempDir, `${m.sender + i}.mp4`);
-						fs.writeFileSync(framePath, res);
-						framePaths.push(framePath);
+						const framePath = path.join(tempDir, `${time + '-' + m.sender + i}.mp4`);
+						try {
+							let res = await fetchApi('/create/brat2', { text: currentText }, { stream: framePath });
+							framePaths.push(res);
+						} catch (e) {
+							let res = await fetchApi('/create/brat4', { text: currentText }, { stream: framePath });
+							framePaths.push(res);
+						}
 					}
-					const fileListPath = path.join(tempDir, `${m.sender}.txt`);
 					let fileListContent = '';
 					for (let i = 0; i < framePaths.length; i++) {
 						fileListContent += `file '${framePaths[i]}'\n`;
@@ -2251,162 +2604,83 @@ module.exports = naze = async (naze, m, msg, store) => {
 					fileListContent += `file '${framePaths[framePaths.length - 1]}'\n`;
 					fileListContent += `duration 3\n`;
 					fs.writeFileSync(fileListPath, fileListContent);
-					const outputVideoPath = path.join(tempDir, `${m.sender}-output.mp4`);
-					execSync(`ffmpeg -y -f concat -safe 0 -i ${fileListPath} -vf 'fps=30' -c:v libx264 -preset veryfast -pix_fmt yuv420p -t 00:00:10 ${outputVideoPath}`);
-					naze.sendAsSticker(m.chat, outputVideoPath, m, { packname, author })
-					framePaths.forEach((filePath) => fs.unlinkSync(filePath));
-					fs.unlinkSync(fileListPath);
-					fs.unlinkSync(outputVideoPath);
+					execSync(`ffmpeg -y -f concat -safe 0 -i "${fileListPath}" -vf 'fps=30' -c:v libx264 -preset veryfast -pix_fmt yuv420p -t 00:00:10 "${outputVideoPath}"`);
+					await naze.sendAsSticker(m.chat, outputVideoPath, m, { packname, author });
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Terjadi Kesalahan Saat Memproses Permintaan!')
+					console.log(e)
+					m.reply(mess.fail)
+				} finally {
+					framePaths.forEach((filePath) => {
+						if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+					});
+					if (fs.existsSync(fileListPath)) fs.unlinkSync(fileListPath);
+					if (fs.existsSync(outputVideoPath)) fs.unlinkSync(outputVideoPath);
 				}
 			}
 			break
 			case 'wasted': {
 				if (!isLimit) return m.reply(mess.limit)
-				try {
-					if (/jpg|jpeg|png/.test(mime)) {
-						m.reply(mess.wait)
-						let media = await quoted.download()
-						let anu = await UguuSe(media)
-						await naze.sendFileUrl(m.chat, 'https://some-random-api.com/canvas/wasted?avatar=' + anu.url, 'Nih Bro', m)
+				if (/jpg|jpeg|png/.test(mime)) {
+					m.react('⏳')
+					let hasil;
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						const form = new FormData();
+					    form.append('buffer', fs.createReadStream(media), {
+							filename: 'image.jpg',
+							contentType: 'image/jpeg'
+						});
+						hasil = await fetchApi('/create/wasted', form, { stream: true });
+						await naze.sendMedia(m.chat, hasil, '', 'Nih Bro', m);
 						setLimit(m, db)
-					} else m.reply('Send Media yg ingin di Upload!')
-				} catch (e) {
-					m.reply('Server Canvas Sedang Offline!')
-				}
+					} finally {
+						if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
+						if (fs.existsSync(media)) fs.unlinkSync(media);
+					}
+				} else m.reply(mess.media)
 			}
 			break
 			case 'trigger': case 'triggered': {
 				if (!isLimit) return m.reply(mess.limit)
-				try {
-					if (/jpg|jpeg|png/.test(mime)) {
-						m.reply(mess.wait)
-						let media = await quoted.download()
-						let anu = await UguuSe(media)
-						await m.reply({ document: { url: 'https://some-random-api.com/canvas/triggered?avatar=' + anu.url }, fileName: 'triggered.gif', mimetype: 'image/gif' })
+				if (/jpg|jpeg|png/.test(mime)) {
+					m.react('⏳')
+					let hasil;
+					let media = await naze.downloadAndSaveMediaMessage(qmsg);
+					try {
+						const form = new FormData();
+					    form.append('buffer', fs.createReadStream(media), {
+							filename: 'image.jpg',
+							contentType: 'image/jpeg'
+						});
+						hasil = await fetchApi('/create/triggered', form, { stream: true });
+						await naze.sendMedia(m.chat, hasil, '', mess.done, m);
 						setLimit(m, db)
-					} else m.reply('Send Media yg ingin di Upload!')
-				} catch (e) {
-					m.reply('Server Canvas Sedang Offline!')
-				}
+					} finally {
+						if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
+						if (fs.existsSync(media)) fs.unlinkSync(media);
+					}
+				} else m.reply(mess.media)
 			}
 			break
 			case 'nulis': {
 				m.reply(`*Example*\n${prefix}nuliskiri\n${prefix}nuliskanan\n${prefix}foliokiri\n${prefix}foliokanan`)
 			}
 			break
-			case 'nuliskiri': {
+			case 'nuliskanan': case 'nuliskiri': case 'foliokanan': case 'foliokiri': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Kirim perintah *${prefix + command}* Teksnya`)
-				m.reply(mess.wait)
+				m.react('⏳')
 				const splitText = text.replace(/(\S+\s*){1,9}/g, '$&\n')
 				const fixHeight = splitText.split('\n').slice(0, 31).join('\n')
-				spawn('convert', [
-					'./src/nulis/images/buku/sebelumkiri.jpg',
-					'-font',
-					'./src/nulis/font/Indie-Flower.ttf',
-					'-size',
-					'960x1280',
-					'-pointsize',
-					'23',
-					'-interline-spacing',
-					'2',
-					'-annotate',
-					'+140+153',
-					fixHeight,
-					'./src/nulis/images/buku/setelahkiri.jpg'
-				])
-				.on('error', () => m.reply(mess.error))
-				.on('exit', () => {
-					m.reply({ image: fs.readFileSync('./src/nulis/images/buku/setelahkiri.jpg'), caption: 'Jangan Malas Lord. Jadilah siswa yang rajin ರ_ರ' })
+				let hasil;
+				try {
+					hasil = await fetchApi('/create/nulis/' + command, { text: fixHeight }, { stream: true });
+					await m.reply({ image: { url: hasil }, caption: 'Jangan Malas Lord. Jadilah siswa yang rajin ರ_ರ' });
 					setLimit(m, db)
-				})
-			}
-			break
-			case 'nuliskanan': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Kirim perintah *${prefix + command}* Teksnya`)
-				m.reply(mess.wait)
-				const splitText = text.replace(/(\S+\s*){1,9}/g, '$&\n')
-				const fixHeight = splitText.split('\n').slice(0, 31).join('\n')
-				spawn('convert', [
-					'./src/nulis/images/buku/sebelumkanan.jpg',
-					'-font',
-					'./src/nulis/font/Indie-Flower.ttf',
-					'-size',
-					'960x1280',
-					'-pointsize',
-					'23',
-					'-interline-spacing',
-					'2',
-					'-annotate',
-					'+128+129',
-					fixHeight,
-					'./src/nulis/images/buku/setelahkanan.jpg'
-				])
-				.on('error', () => m.reply(mess.error))
-				.on('exit', () => {
-					m.reply({ image: fs.readFileSync('./src/nulis/images/buku/setelahkanan.jpg'), caption: 'Jangan Malas Lord. Jadilah siswa yang rajin ರ_ರ' })
-					setLimit(m, db)
-				})
-			}
-			break
-			case 'foliokiri': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Kirim perintah *${prefix + command}* Teksnya`)
-				m.reply(mess.wait)
-				const splitText = text.replace(/(\S+\s*){1,9}/g, '$&\n')
-				const fixHeight = splitText.split('\n').slice(0, 38).join('\n')
-				spawn('convert', [
-					'./src/nulis/images/folio/sebelumkiri.jpg',
-					'-font',
-					'./src/nulis/font/Indie-Flower.ttf',
-					'-size',
-					'1720x1280',
-					'-pointsize',
-					'23',
-					'-interline-spacing',
-					'4',
-					'-annotate',
-					'+48+185',
-					fixHeight,
-					'./src/nulis/images/folio/setelahkiri.jpg'
-				])
-				.on('error', () => m.reply(mess.error))
-				.on('exit', () => {
-					m.reply({ image: fs.readFileSync('./src/nulis/images/folio/setelahkiri.jpg'), caption: 'Jangan Malas Lord. Jadilah siswa yang rajin ರ_ರ' })
-					setLimit(m, db)
-				})
-			}
-			break
-			case 'foliokanan': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Kirim perintah *${prefix + command}* Teksnya`)
-				m.reply(mess.wait)
-				const splitText = text.replace(/(\S+\s*){1,9}/g, '$&\n')
-				const fixHeight = splitText.split('\n').slice(0, 38).join('\n')
-				spawn('convert', [
-					'./src/nulis/images/folio/sebelumkanan.jpg',
-					'-font',
-					'./src/nulis/font/Indie-Flower.ttf',
-					'-size',
-					'1720x1280',
-					'-pointsize',
-					'23',
-					'-interline-spacing',
-					'4',
-					'-annotate',
-					'+89+190',
-					fixHeight,
-					'./src/nulis/images/folio/setelahkanan.jpg'
-				])
-				.on('error', () => m.reply(mess.error))
-				.on('exit', () => {
-					m.reply({ image: fs.readFileSync('./src/nulis/images/folio/setelahkanan.jpg'), caption: 'Jangan Malas Lord. Jadilah siswa yang rajin ರ_ರ' })
-					setLimit(m, db)
-				})
+				} finally {
+					if (fs.existsSync(hasil)) fs.unlinkSync(hasil);
+				}
 			}
 			break
 			case 'bass': case 'blown': case 'deep': case 'earrape': case 'fast': case 'fat': case 'nightcore': case 'reverse': case 'robot': case 'slow': case 'smooth': case 'tupai': {
@@ -2425,32 +2699,30 @@ module.exports = naze = async (naze, m, msg, store) => {
 					if (/smooth/.test(command)) set = '-filter:v "minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=120\'"'
 					if (/tupai/.test(command)) set = '-filter:a "atempo=0.5,asetrate=65100"'
 					if (/audio/.test(mime)) {
-						m.reply(mess.wait)
+						m.react('⏳')
 						let media = await naze.downloadAndSaveMediaMessage(qmsg)
-						let ran = `./database/sampah/${getRandom('.mp3')}`;
-						exec(`ffmpeg -i ${media} ${set} ${ran}`, (err, stderr, stdout) => {
-							fs.unlinkSync(media)
-							if (err) return m.reply(err)
-							let buff = fs.readFileSync(ran)
-							m.reply({ audio: buff, mimetype: 'audio/mpeg' })
-							fs.unlinkSync(ran)
-						});
+						let ran = `./database/temp/${getRandom('.mp3')}`;
+						exec(`ffmpeg -i "${media}" ${set} "${ran}"`, async (err, stderr, stdout) => {
+			                try {
+			                    if (err) return m.reply(mess.fail)
+			                    await m.reply({ audio: { url: ran }, mimetype: 'audio/mpeg' });
+			                } finally {
+			                    if (fs.existsSync(media)) fs.unlinkSync(media);
+			                    if (fs.existsSync(ran)) fs.unlinkSync(ran);
+			                }
+			            });
 					} else m.reply(`Balas audio yang ingin diubah dengan caption *${prefix + command}*`)
 				} catch (e) {
-					m.reply('Gagal!')
+					m.reply(mess.fail)
 				}
 			}
 			break
 			case 'tinyurl': case 'shorturl': case 'shortlink': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text || !isUrl(text)) return m.reply(`Example: ${prefix + command} https://github.com/nazedev/hitori`)
-				try {
-					let anu = await axios.get('https://tinyurl.com/api-create.php?url=' + text)
-					m.reply('Url : ' + anu.data)
-					setLimit(m, db)
-				} catch (e) {
-					m.reply('Gagal!')
-				}
+				let hasil = await fetchApi('/other/tinyurl', { url: text });
+				m.reply('Url : ' + hasil.result)
+				setLimit(m, db)
 			}
 			break
 			case 'git': case 'gitclone': {
@@ -2462,85 +2734,78 @@ module.exports = naze = async (naze, m, msg, store) => {
 					m.reply({ document: { url: `https://api.github.com/repos/${user}/${repo}/zipball` }, fileName: repo + '.zip', mimetype: 'application/zip' }).catch((e) => m.reply(mess.error))
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Gagal!')
+					m.reply(mess.fail)
 				}
 			}
 			break
 			
 			// Ai Menu
-			case 'ai': {
+			case 'ai': case 'google': case 'bard': case 'gemini': {
 				if (!text) return m.reply(`Example: ${prefix + command} query`)
 				try {
-					let hasil = await yanzGpt([{ role: 'system', content: '' }, { role: 'user', content: text }])
-					m.reply(hasil.choices[0].message.content)
+					let hasil = await fetchApi('/ai/gemini-flash-lite', { query: text });
+					m.reply(hasil.result.text)
 				} catch (e) {
-					try {
-						let hasil = await youSearch(text)
-						m.reply(hasil)
-					} catch (e) {
-						try {
-							let hasil = await bk9Ai(text)
-							m.reply(hasil.BK9)
-						} catch (e) {
-							m.reply(pickRandom(['Fitur Ai sedang bermasalah!','Tidak dapat terhubung ke ai!','Sistem Ai sedang sibuk sekarang!','Fitur sedang tidak dapat digunakan!']))
+					m.reply(pickRandom(['Fitur Ai sedang bermasalah!','Tidak dapat terhubung ke ai!','Sistem Ai sedang sibuk sekarang!','Fitur sedang tidak dapat digunakan!']))
+				}
+			}
+			break
+			case 'archipelago': case 'grok': case 'glm': case 'claude': {
+				if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
+				if (!text) return m.reply('Halo! Ada yang bisa dibantu hari ini?')
+				try {
+					let model;
+					if (command == 'glm') model = 'glm-4.7-flash'
+					if (command == 'claude') model = 'claude-3-haiku'
+					if (command == 'archipelago') model = 'archipelago-70b'
+					if (command == 'grok') model = 'grok-4.1-fast-non-reasoning'
+					
+					const response = await fetchApi('/chat/completions', {
+						model, messages: [{ role: 'user', content: text }]
+					}, {
+						api: 2, method: 'POST',
+						headers: {
+							'Authorization': `Bearer ${APIKeys[APIs.neosantara]}`
 						}
-					}
+					});
+					await m.reply(response.choices[0].message.content);
+				} catch (e) {
+					m.reply('Waduh, ada kendala pas nanya ke Neosantara nih.');
 				}
 			}
 			break
-			case 'simi': {
-				if (!text) return m.reply(`Example: ${prefix + command} query`)
+			case 'deepseek': case 'r1': {
+				if (APIKeys[APIs.neosantara] === 'API_KEY_NEOSANTARA_AI') return m.reply('Silahkan Ganti Apikey Neosantara Ai!\nDi file settings.js. Example: .setapikey neo key_nya');
+				if (!text) return m.reply('Halo! Ada yang bisa dibantu hari ini?');
+				m.reply('Tunggu bentar, lagi mikir... 🧠');
 				try {
-					const hasil = await simi(text)
-					m.reply(hasil.success)
+					const response = await fetchApi('/chat/completions', {
+						model: 'deepseek-r1',
+						messages: [{ role: 'user', content: text }],
+						thinking: { type: 'enabled', budget_tokens: 2048 }
+					}, {
+						api: 2, method: 'POST',
+						headers: {
+							'Authorization': `Bearer ${APIKeys[APIs.neosantara]}`
+						}
+					});
+					const result = response.choices[0].message;
+					const thought = result.reasoning_content ? `*Proses Mikir:*\n_${result.reasoning_content}_` : '';
+					await m.reply(thought + result.content);
 				} catch (e) {
-					m.reply('Server simi sedang offline!')
-				}
-			}
-			break
-			case 'bard': case 'gemini': case 'aiedit': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Example: ${prefix + command} tanggal berapa sekarang?`)
-				if (!(APIKeys.geminiApikey?.length > 0 && APIKeys.geminiApikey?.some(a => a.trim() !== ''))) return m.reply('Silahkan Ambil Apikey Terlebih dahulu di\nhttps://aistudio.google.com/app/apikey')
-				try {
-					let apinya = pickRandom(APIKeys.geminiApikey)
-					geminiAi(text, apinya, quoted.isMedia ? { mime: quoted.mime, media: await quoted.download() } : {}).then(a => {
-						if (a.media) naze.sendMedia(m.chat, a.media, '', a.text || '', m)
-						else if (a.text) m.reply(a.text)
-					}).catch(e => {
-						if (e.status === 503) m.reply('Model Gemini sedang sibuk, coba beberapa saat lagi...')
-						else if (e.status === 400) m.reply('API key not valid. Please pass a valid API key.')
-						else m.reply('Apikeymu limit atau terjadi error lain!')
-					})
-					setLimit(m, db)
-				} catch (e) {
-					m.reply('Apikeymu limit!\nSilahkan Ganti dengan apikey lain!')
+					console.log(e);
+					m.reply('Waduh, ada kendala pas nanya ke Neosantara nih.');
 				}
 			}
 			break
 			
 			// Search Menu
-			case 'google': {
-				if (!text) return m.reply(`Example: ${prefix + command} query`)
-				try {
-					let anu = await youSearch(text);
-					m.reply(anu)
-				} catch (e) {
-					try {
-						let anu = await yanzGpt([{ role: 'system', content: 'carikan informasi tentang hal tersebut secara mendetail, dengan sumbernya juga!' }, { role: 'user', content: text }]);
-						m.reply(hasil.choices[0].message.content)
-					} catch (e) {
-						m.reply('Pencarian Tidak Ditemukan!')
-					}
-				}
-			}
-			break
 			case 'gimage': case 'bingimg': {
 				if (!text) return m.reply(`Example: ${prefix + command} query`)
 				try {
-					let anu = await fetchApi('/search/bing', { query: text });
+					let anu = await fetchApi('/search/google', { query: text });
 					let una = pickRandom(anu.result)
-					await m.reply({ image: { url: una }, caption: 'Hasil Pencarian ' + text })
+					await m.reply({ image: { url: una.pagemap?.cse_thumbnail?.[0]?.src || una.pagemap?.cse_image?.[0].src || una.pagemap?.metatags?.[0]?.["og:image"] }, caption: 'Hasil Pencarian ' + text + '\nTitle: ' + una.title + '\nSnippet: ' + una.snippet + '\nSource: ' + una.link || una.formattedUrl })
 					setLimit(m, db)
 				} catch (e) {
 					m.reply('Pencarian Tidak Ditemukan!')
@@ -2549,7 +2814,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'play': case 'ytplay': case 'yts': case 'ytsearch': case 'youtubesearch': {
 				if (!text) return m.reply(`Example: ${prefix + command} dj komang`)
-				m.reply(mess.wait)
+				m.react('⏳')
 				try {
 					const res = await yts.search(text);
 					const hasil = pickRandom(res.all)
@@ -2557,20 +2822,12 @@ module.exports = naze = async (naze, m, msg, store) => {
 					await m.reply({ image: { url: hasil.thumbnail }, caption: teksnya })
 				} catch (e) {
 					try {
-						const nvl = new NvlGroup();
-						let anu = await nvl.search(text);
-						let hasil = pickRandom(anu.videos)
-						let teksnya = `*📍Title:* ${hasil.title || 'Tidak tersedia'}\n*✏Upload At:* ${hasil.uploaded || 'Tidak tersedia'}\n*🌟Channel:* ${hasil.author || 'Tidak tersedia'}\n*⏳Duration:* ${hasil.duration || 'Tidak tersedia'}\n*🔎Source:* ${hasil.url || 'Tidak tersedia'}\n\n_note : jika ingin mendownload silahkan_\n_pilih ${prefix}ytmp3 url_video atau ${prefix}ytmp4 url_video_`;
-						await m.reply({ image: { url: hasil.thumbnail }, caption: teksnya })
+						const res = await fetchApi('/search/youtube', { query: text });
+						const hasil = pickRandom(res.result.items)
+						const teksnya = `*📍Title:* ${hasil.snippet.title || 'Tidak tersedia'}\n*✏Description:* ${hasil.snippet.description || 'Tidak tersedia'}\n*🌟Channel:* ${hasil.snippet.channelTitle || 'Tidak tersedia'}\n*⏳Duration:* ${hasil.duration || 'Tidak tersedia'}\n*🔎Source:* https://youtu.be/${hasil.id.videoId || 'Tidak tersedia'}\n\n_note : jika ingin mendownload silahkan_\n_pilih ${prefix}ytmp3 url_video atau ${prefix}ytmp4 url_video_`;
+						await m.reply({ image: { url: hasil.snippet.thumbnails.medium.url }, caption: teksnya })
 					} catch (e) {
-						try {
-							const res = await fetchApi('/search/youtube', { query: text });
-							const hasil = pickRandom(res.data)
-							const teksnya = `*📍Title:* ${hasil.title || 'Tidak tersedia'}\n*✏Description:* ${hasil.description || 'Tidak tersedia'}\n*🌟Channel:* ${hasil.channelTitle || 'Tidak tersedia'}\n*⏳Duration:* ${hasil.duration || 'Tidak tersedia'}\n*🔎Source:* https://youtu.be/${hasil.id || 'Tidak tersedia'}\n\n_note : jika ingin mendownload silahkan_\n_pilih ${prefix}ytmp3 url_video atau ${prefix}ytmp4 url_video_`;
-							await m.reply({ image: { url: hasil.thumbMedium }, caption: teksnya })
-						} catch (e) {
-							m.reply('Post not available!')
-						}
+						m.reply('Post not available!')
 					}
 				}
 			}
@@ -2579,16 +2836,15 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} hu tao`)
 				try {
-					let { pixivdl } = require('./lib/pixiv')
-					let res = await pixivdl(text)
-					m.reply(mess.wait)
-					for (let i = 0; i < res.media.length; i++) {
-						let caption = i == 0 ? `${res.caption}\n\n*By:* ${res.artist}\n*Tags:* ${res.tags.join(', ')}` : ''
-						let mime = (await FileType.fromBuffer(res.media[i])).mime 
-						await m.reply({ [mime.split('/')[0]]: res.media[i], caption, mimetype: mime })
-					}
+					m.react('⏳')
+					const res = await fetchApi('/search/pixiv', { query: text });
+					let hasil = pickRandom(res.result.body.illusts);
+					const response = await fetch(hasil.url, { headers: { 'referer': 'https://www.pixiv.net' }});
+					const image = await response.buffer();
+					m.reply({ image, caption: `Title: ${hasil.title}\nDescription: ${hasil.alt}\nTags:\n${hasil.tags.map(a => '- ' + a).join('\n')}` });
 					setLimit(m, db)
 				} catch (e) {
+					console.log(e)
 					m.reply('Post not available!')
 				}
 			}
@@ -2597,23 +2853,13 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} hu tao`)
 				try {
-					let anu = await pinterest(text)
-					let result = pickRandom(anu)
-					if (anu.length < 1) {
-						m.reply('Post not available!');
-					} else {
-						await m.reply({ image: { url: result.images_url }, caption: `*Media Url :* ${result.pin}${result.link ? '\n*Source :* ' + result.link : ''}` })
-						setLimit(m, db)
-					}
+					const res = await fetchApi('/search/pinterest', { query: text });
+					const hasil = pickRandom(res.result)
+					const image = await getBuffer(hasil);
+					await m.reply({ image, caption: 'Hasil dari: ' + text })
+					setLimit(m, db)
 				} catch (e) {
-					try {
-						const res = await fetchApi('/search/pinterest', { query: text });
-						const hasil = pickRandom(res.data.result.pins)
-						await m.reply({ image: { url: hasil.media.images.orig.url }, caption: `*Media Url :* ${hasil.media.images.orig.url}${hasil.pin_url ? '\n*Source :* ' + hasil.pin_url : ''}` })
-						setLimit(m, db)
-					} catch (e) {
-						m.reply('Pencarian tidak ditemukan!');
-					}
+					m.reply('Pencarian tidak ditemukan!');
 				}
 			}
 			break
@@ -2621,27 +2867,16 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} hu tao`)
 				try {
-					let anu = await wallpaper(text)
-					let result = pickRandom(anu)
+					let anu = await fetchApi('/search/pinterest', { query: text });
 					if (anu.length < 1) {
 						m.reply('Post not available!');
 					} else {
-						await m.reply({ image: { url: result.image[0] }, caption: `⭔ title : ${q}\n⭔ category : ${result.type}\n⭔ media url : ${result.image[2] || result.image[1] || result.image[0]}`})
+						let result = pickRandom(anu.result)
+						await m.reply({ image: { url: result.urls.original }, caption: `*Media Url :* ${result.pin}${result.description ? '\n*Description :* ' + result.description : ''}` })
 						setLimit(m, db)
 					}
 				} catch (e) {
-					try {
-						let anu = await pinterest('wallpaper ' + text)
-						let result = pickRandom(anu)
-						if (anu.length < 1) {
-							m.reply('Post not available!');
-						} else {
-							await m.reply({ image: { url: result.images_url }, caption: `*Media Url :* ${result.pin}${result.link ? '\n*Source :* ' + result.link : ''}` })
-							setLimit(m, db)
-						}
-					} catch (e) {
-						m.reply('Server wallpaper sedang offline!')
-					}
+					m.reply('Server wallpaper sedang offline!')
 				}
 			}
 			break
@@ -2649,9 +2884,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} black rover`)
 				try {
-					let anu = await ringtone(text)
-					let result = pickRandom(anu)
-					await m.reply({ audio: { url: result.audio }, fileName: result.title + '.mp3', mimetype: 'audio/mpeg' })
+					let anu = await fetchApi('/search/meloboom', { query: text });
+					let result = pickRandom(anu.result.data)
+					await m.reply({ audio: { url: anu.result.populated.media[result.media.audio[0]].url }, fileName: result.slug + '.mp3', mimetype: 'audio/mpeg' })
 					setLimit(m, db)
 				} catch (e) {
 					m.reply('Audio tidak ditemukan!')
@@ -2661,10 +2896,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'npm': case 'npmjs': {
 				if (!text) return m.reply(`Example: ${prefix + command} axios`)
 				try {
-					let res = await fetch(`http://registry.npmjs.com/-/v1/search?text=${text}`)
-					let { objects } = await res.json()
-					if (!objects.length) return m.reply('Pencarian Tidak di temukan')
-					let txt = objects.map(({ package: pkg }) => {
+					let anu = await fetchApi('/search/npm', { query: text });
+					if (anu.result.objects.length > 1) return m.reply('Pencarian Tidak di temukan')
+					let txt = anu.result.objects.map(({ package: pkg }) => {
 						return `*${pkg.name}* (v${pkg.version})\n_${pkg.links.npm}_\n_${pkg.description}_`
 					}).join`\n\n`
 					m.reply(txt)
@@ -2675,29 +2909,29 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'style': {
 				if (!text) return m.reply(`Example: ${prefix + command} Naze`)
-				let anu = await styletext(text)
-				let txt = anu.map(a => `*${a.name}*\n${a.result}`).join`\n\n`
+				let anu = await fetchApi('/tools/styletext', { text });
+				let txt = anu.result.map(a => `*${a.name}*\n${a.result}`).join`\n\n`
 				m.reply(txt)
 			}
 			break
 			case 'spotify': case 'spotifysearch': {
 				if (!text) return m.reply(`Example: ${prefix + command} alan walker alone`)
 				try {
-					let hasil = await fetchJson('https://www.bhandarimilan.info.np/spotisearch?query=' + encodeURIComponent(text));
-					let txt = hasil.map(a => {
-						return `*Name : ${a.name}*\n- Artist : ${a.artist}\n- Url : ${a.link}`
+					let hasil = await fetchApi('/search/spotify', { query: text });
+					let txt = hasil.result.map(a => {
+						return `*Title : ${a.title}*\n- Artist : ${a.artist}\n- Url : ${a.url}`
 					}).join`\n\n`
 					m.reply(txt)
 				} catch (e) {
-					m.reply('Server Search Offline!')
+					m.reply('Hasil Tidak Ditemukan!')
 				}
 			}
 			break
 			case 'tenor': {
 				if (!text) return m.reply(`Example: ${prefix + command} alone`)
 				try {
-					const anu = await fetchJson('https://g.tenor.com/v1/search?q=' + text + '&key=LIVDSRZULELA')
-					const hasil = pickRandom(anu.results)
+					const anu = await fetchApi('/search/tenor', { query: text });
+					const hasil = pickRandom(anu.result)
 					await m.reply({ video: { url: hasil.media[0].mp4.url }, caption: `👀 *Media:* ${hasil.url}\n📋 *Description:* ${hasil.content_description}\n🔛 *Url:* ${hasil.itemurl}`, gifPlayback: true, gifAttribution: 2 })
 				} catch (e) {
 					m.reply('Hasil Tidak Ditemukan!')
@@ -2717,22 +2951,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			
 			// Stalker Menu
-			case 'igstalk': case 'instagramstalk': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Example: ${prefix + command} usernamenya`)
-				try {
-					let anu = await instaStalk(text)
-					m.reply({ image: { url: anu.avatar }, caption: `*Username :* ${anu.username}\n*Nickname :* ${anu.nickname}\n*Bio :* ${anu.description}\n*Posts :* ${anu.posts}\n*Followers :* ${anu.followers}\n*Following :* ${anu.following}\n*List Post :* ${anu.list_post.map(a => `\n*Url :* ${a.imageUrl}\n*Description :* ${a.description}\n*Detail :* ${a.detailUrl}`).join('\n')}` })
-				} catch (e) {
-					try {
-						let res = await fetchApi('/stalk/instagram', { username: text });
-						m.reply({ image: { url: res.data.profile_picture_url }, caption: `*Username :*${res.data?.username || 'Tidak Ada'}\n*Nickname :*${res.data?.full_name || 'Tidak Ada'}\n*ID :*${res.data?.instagram_id}\n*Followers :*${res.data?.followers || '0'}\n*Following :*${res.data?.following || '0'}\n*Description :*${res.data?.description || 'Tidak Ada'}\n*Website :*${res.data?.website || 'Tidak Ada'}\n*Add At :*${res.data?.added_date}\n*Uploads :*${res.data?.uploads}\n*Verified :*${res.data?.is_verified}\n*Private :*${res.data.is_private}\n` })
-					} catch (e) {
-						m.reply('Username Tidak ditemukan!')
-					}
-				}
-			}
-			break
 			case 'wastalk': case 'whatsappstalk': {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} @tag / 628xxx`)
@@ -2748,44 +2966,10 @@ module.exports = naze = async (naze, m, msg, store) => {
 					let format = PhoneNum(`+${num.split('@')[0]}`)
 					let regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 					let country = regionNames.of(format.getRegionCode('international'));
-					let wea = `WhatsApp Stalk\n\n*° Country :* ${country.toUpperCase()}\n*° Name :* ${name ? name : '-'}\n*° Format Number :* ${format.getNumber('international')}\n*° Url Api :* wa.me/${num.split('@')[0]}\n*° Mentions :* @${num.split('@')[0]}\n*° Status :* ${bio?.status || '-'}\n*° Date Status :* ${bio?.setAt ? moment(bio.setAt.toDateString()).locale('id').format('LL') : '-'}\n\n${business ? `*WhatsApp Business Stalk*\n\n*° BusinessId :* ${business.wid}\n*° Website :* ${business.website ? business.website : '-'}\n*° Email :* ${business.email ? business.email : '-'}\n*° Category :* ${business.category}\n*° Address :* ${business.address ? business.address : '-'}\n*° Timeone :* ${business.business_hours.timezone ? business.business_hours.timezone : '-'}\n*° Description* : ${business.description ? business.description : '-'}` : '*Standard WhatsApp Account*'}`
+					let wea = `WhatsApp Stalk\n\n*° Country :* ${country.toUpperCase()}\n*° Name :* ${name ? name : '-'}\n*° Format Number :* ${format.getNumber('international')}\n*° Url Api :* wa.me/${num.split('@')[0]}\n*° Mentions :* @${num.split('@')[0]}\n*° Status :* ${bio?.status || '-'}\n*° Date Status :* ${bio?.setAt ? moment(bio.setAt.toDateString()).locale(locale).format('LL') : '-'}\n\n${business ? `*WhatsApp Business Stalk*\n\n*° BusinessId :* ${business.wid}\n*° Website :* ${business.website ? business.website : '-'}\n*° Email :* ${business.email ? business.email : '-'}\n*° Category :* ${business.category}\n*° Address :* ${business.address ? business.address : '-'}\n*° Timeone :* ${business.business_hours.timezone ? business.business_hours.timezone : '-'}\n*° Description* : ${business.description ? business.description : '-'}` : '*Standard WhatsApp Account*'}`
 					img ? await naze.sendMessage(m.chat, { image: { url: img }, caption: wea, mentions: [num] }, { quoted: m }) : m.reply(wea)
 				} catch (e) {
 					m.reply('Nomer Tidak ditemukan!')
-				}
-			}
-			break
-			case 'telestalk': case 'telegramstalk': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Example: ${prefix + command} usernamenya`)
-				try {
-					const res = await telegramStalk(text)
-					if (!res.description || res.title.startsWith('Telegram: Contact')) throw 'Error'
-					m.reply({ image: { url: res.image_url }, caption: `*Username :* ${text}\n*Nickname :* ${res.title || 'Tidak ada'}\n*Desc :* ${res.description || 'Tidak ada'}\n*Url :* ${res.url}`})
-				} catch (e) {
-					m.reply('Username Tidak ditemukan!')
-				}
-			}
-			break
-			case 'tiktokstalk': case 'ttstalk': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Example: ${prefix + command} usernamenya`)
-				try {
-					const res = await tiktokStalk(text)
-					m.reply({ image: { url: res.avatarThumb }, caption: `*Username :* ${text}\n*Nickname :* ${res.nickname}\n*Followers :* ${res.followerCount}\n*Following :* ${res.followingCount}\n*Bio :* ${res.signature}\n*Verified :* ${res.verified}\n*Video Count :* ${res.videoCount}\n*Heart Count :* ${res.heartCount}` })
-				} catch (e) {
-					m.reply('Username Tidak ditemukan!')
-				}
-			}
-			break
-			case 'genshinstalk': case 'gistalk': {
-				if (!isLimit) return m.reply(mess.limit)
-				if (!text) return m.reply(`Example: ${prefix + command} idnya`)
-				try {
-					const res = await genshinStalk(text)
-					m.reply({ image: { url: res.image }, caption: `*Genshin profile*\n- *ID :* ${res.uid}\n- *Nickname :* ${res.nickname}\n- *Signature :* ${res.signature}\n- *Level :* ${res.level}\n- *World Level :* ${res.world_level}\n- *Achivement :* ${res.achivement}\n- *Spiral Abyss :* ${res.spiral_abyss}\n- *Ttl :* ${res.ttl}` })
-				} catch (e) {
-					m.reply('Username Tidak ditemukan!')
 				}
 			}
 			break
@@ -2806,7 +2990,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} url_youtube`)
 				if (!text.includes('youtu')) return m.reply('Url Tidak Mengandung Result Dari Youtube!')
-				m.reply(mess.wait)
+				m.react('⏳')
 				try {
 					const hasil = await ytMp3(text);
 					await m.reply({
@@ -2827,24 +3011,25 @@ module.exports = naze = async (naze, m, msg, store) => {
 					setLimit(m, db)
 				} catch (e) {
 					try {
-						let hasil = await savetube.download(text, 'mp3')
-						await naze.sendFileUrl(m.chat, hasil.result.download, hasil.result.title, m)
+						const { result: hasil } = await fetchApi('/download/youtube', { url: text });
+						await m.reply({
+							audio: { url: hasil.download },
+							mimetype: 'audio/mpeg',
+							contextInfo: {
+								externalAdReply: {
+									title: hasil.title,
+									body: hasil.quality,
+									previewType: 'PHOTO',
+									thumbnailUrl: hasil.thumbnail,
+									mediaType: 1,
+									renderLargerThumbnail: true,
+									sourceUrl: text
+								}
+							}
+						})
 						setLimit(m, db)
 					} catch (e) {
-						try {
-							const nvl = new NvlGroup();
-							let anu = await nvl.download(text);
-							await naze.sendFileUrl(m.chat, anu.audio[0].url, anu.audio[0].size, m)
-							setLimit(m, db)
-						} catch (e) {
-							try {
-								let hasil = await fetchApi('/download/youtube', { url: text })
-								await naze.sendFileUrl(m.chat, hasil.result.audio, hasil.result.title, m)
-								setLimit(m, db)
-							} catch (e) {
-								m.reply('Gagal Mendownload Audio!')
-							}
-						}
+						m.reply(mess.fail);
 					}
 				}
 			}
@@ -2853,30 +3038,27 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} url_youtube`)
 				if (!text.includes('youtu')) return m.reply('Url Tidak Mengandung Result Dari Youtube!')
-				m.reply(mess.wait)
+				m.react('⏳')
+				let videoPath = null;
 				try {
 					const hasil = await ytMp4(text);
-					await m.reply({ video: hasil.result, caption: `*📍Title:* ${hasil.title}\n*✏Description:* ${hasil.desc ? hasil.desc : ''}\n*🚀Channel:* ${hasil.channel}\n*🗓Upload at:* ${hasil.uploadDate}` })
+					videoPath = hasil.result;
+					await m.reply({ video: { url: videoPath }, caption: `*📍Title:* ${hasil.title}\n*✏Description:* ${hasil.desc ? hasil.desc : ''}\n*🚀Channel:* ${hasil.channel}\n*🗓Upload at:* ${hasil.uploadDate}`});
 					setLimit(m, db)
 				} catch (e) {
 					try {
-						let hasil = await savetube.download(text, '360')
-						await naze.sendFileUrl(m.chat, hasil.result.download, hasil.result.title, m)
+						const { result: hasil } = await fetchApi('/download/youtube', { url: text, format: '360' });
+						await m.reply({ video: { url: hasil.download }, caption: `*📍Title:* ${hasil.title}\n*✏Quality:* ${hasil.quality ? hasil.quality : ''}\n*⏳Duration:* ${hasil.duration}` })
 						setLimit(m, db)
 					} catch (e) {
+						m.reply(mess.fail);
+					}
+				} finally {
+					if (videoPath && fs.existsSync(videoPath)) {
 						try {
-							const nvl = new NvlGroup();
-							let anu = await nvl.download(text);
-							await naze.sendFileUrl(m.chat, anu.video.find(v => v.height === 360).url || anu.video[0].url, 'Done', m)
-							setLimit(m, db)
+							fs.unlinkSync(videoPath);
 						} catch (e) {
-							try {
-								let hasil = await fetchApi('/download/youtube', { url: text })
-								await naze.sendFileUrl(m.chat, hasil.result.video, hasil.result.title, m)
-								setLimit(m, db)
-							} catch (e) {
-								m.reply('Gagal Mendownload Audio!')
-							}
+							console.error(e);
 						}
 					}
 				}
@@ -2886,38 +3068,21 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} url_instagram`)
 				if (!text.includes('instagram.com')) return m.reply('Url Tidak Mengandung Result Dari Instagram!')
-				m.reply(mess.wait)
+				m.react('⏳')
 				try {
-					const hasil = await instagramDl(text);
-					if(hasil.length < 0) return m.reply('Postingan Tidak Tersedia atau Privat!')
-					for (let i = 0; i < hasil.length; i++) {
-						await naze.sendFileUrl(m.chat, hasil[i].url, 'Done', m)
-					}
+					let hasil = await fetchApi('/download/instagram2', { url: text })
+					if(hasil.result?.urls?.length > 1) {
+						await naze.sendAlbumMessage(m.chat, {
+							album: hasil.result.urls.map(a => (a.is_video ? { video: { url: a.url }} : { image: { url: a.url }})),
+							caption: hasil.result.caption
+						}, { quoted: m });
+					} else if(hasil.result?.urls?.length == 1) {
+						m.reply({ image: { url: hasil.result.urls[0].url }, caption: hasil.result.caption });
+					} else m.reply('Postingan Tidak Tersedia atau Privat!')
 					setLimit(m, db)
 				} catch (e) {
-					try {
-						let hasil = await fetchApi('/download/instagram', { url: text })
-						if(hasil.result.url.length < 0) return m.reply('Postingan Tidak Tersedia atau Privat!')
-						for (let i = 0; i < hasil.result.url.length; i++) {
-							await naze.sendFileUrl(m.chat, hasil.result.url[i], 'Done', m)
-						}
-						setLimit(m, db)
-					} catch (e) {
-						m.reply('Postingan Tidak Tersedia atau Privat!')
-					}
-				}
-			}
-			break
-			case 'igstory': case 'instagramstory': case 'instastory': case 'storyig': {
-				if (!text) return m.reply(`Example: ${prefix + command} usernamenya`)
-				try {
-					const hasil = await instaStory(text);
-					m.reply(mess.wait)
-					for (let i = 0; i < hasil.results.length; i++) {
-						await naze.sendFileUrl(m.chat, hasil.results[i].url, 'Done', m)
-					}
-				} catch (e) {
-					m.reply('Username tidak ditemukan atau Privat!');
+					console.log(e)
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -2926,18 +3091,22 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} url_tiktok`)
 				if (!text.includes('tiktok.com')) return m.reply('Url Tidak Mengandung Result Dari Tiktok!')
 				try {
-					const hasil = await tiktokDl(text);
-					m.reply(mess.wait)
-					if (hasil && hasil.size_nowm) {
-						await naze.sendFileUrl(m.chat, hasil.data[1].url, `*📍Title:* ${hasil.title}\n*⏳Duration:* ${hasil.duration}\n*🎃Author:* ${hasil.author.nickname} (@${hasil.author.fullname})`, m)
+					const hasil = await fetchApi('/download/tiktok', { url: text })
+					m.react('⏳')
+					if (hasil.result.download.type == "video") {
+						await m.reply({ video: { url: hasil.result.download?.video?.nowm_hd || hasil.result.download?.video?.nowm }, caption: `*📍Title:* ${hasil.result.desc || '-'}\n*🕓Create At:* ${hasil.result.create_time}\n*🎃Author:* ${hasil.result.author.nickname} (@${hasil.result.author.unique_id})` });
+					} else if (hasil.result.download.type == "images") {
+						await naze.sendAlbumMessage(m.chat, {
+							album: hasil.result.download.images.map(a => ({ image: { url: a.url }})),
+							caption: `*📍Title:* ${hasil.result.desc || '-'}\n*🕓Create At:* ${hasil.result.create_time}\n*🎃Author:* ${hasil.result.author.nickname} (@${hasil.result.author.unique_id})`
+						}, { quoted: m });
 					} else {
-						for (let i = 0; i < hasil.data.length; i++) {
-							await naze.sendFileUrl(m.chat, hasil.data[i].url, `*🚀Image:* ${i+1}`, m)
-						}
+						return m.reply('Url Tidak Valid!')
 					}
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Gagal/Url tidak valid!')
+					console.log(e)
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -2946,17 +3115,17 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} url_tiktok`)
 				if (!text.includes('tiktok.com')) return m.reply('Url Tidak Mengandung Result Dari Tiktok!')
 				try {
-					const hasil = await tiktokDl(text);
-					m.reply(mess.wait)
+					const hasil = await fetchApi('/download/tiktok', { url: text });
+					m.react('⏳')
 					await m.reply({
-						audio: { url: hasil.music_info.url },
+						audio: { url: hasil.result.download.music },
 						mimetype: 'audio/mpeg',
 						contextInfo: {
 							externalAdReply: {
-								title: 'TikTok • ' + hasil.author.nickname,
-								body: hasil.stats.likes + ' suka, ' + hasil.stats.comment + ' komentar. ' + hasil.title,
+								title: 'TikTok • ' + hasil.result.author.nickname,
+								body: hasil.result.statistics.like + ' suka, ' + hasil.result.statistics.command + ' komentar. ' + hasil.result.desc,
 								previewType: 'PHOTO',
-								thumbnailUrl: hasil.cover,
+								thumbnailUrl: hasil.result.download?.music_info?.cover_hd || hasil.result.download.music_info.cover_medium,
 								mediaType: 1,
 								renderLargerThumbnail: true,
 								sourceUrl: text
@@ -2965,7 +3134,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 					})
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Gagal/Url tidak valid!')
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -2974,16 +3143,16 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} url_facebook`)
 				if (!text.includes('facebook.com')) return m.reply('Url Tidak Mengandung Result Dari Facebook!')
 				try {
-					const hasil = await facebookDl(text);
-					if (hasil.results.length < 1) {
+					const hasil = await fetchApi('/download/facebook', { url: text });
+					if (!hasil.result.hd && !hasil.result.sd) {
 						m.reply('Video Tidak ditemukan!')
 					} else {
-						m.reply(mess.wait)
-						await naze.sendFileUrl(m.chat, hasil.results[0].url, `*🎐Title:* ${hasil.caption}`, m);
+						m.react('⏳')
+						await naze.sendFileUrl(m.chat, hasil.result.hd || hasil.result.sd, `*🎐Title:* ${hasil.result.title}`, m);
 					}
 					setLimit(m, db)
 				} catch (e) {
-					m.reply('Server downloader facebook sedang offline!')
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -2992,17 +3161,11 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!text) return m.reply(`Example: ${prefix + command} https://www.mediafire.com/file/xxxxxxxxx/xxxxx.zip/file`)
 				if (!isUrl(args[0]) && !args[0].includes('mediafire.com')) return m.reply('Url Invalid!')
 				try {
-					const anu = await mediafireDl(text)
-					await m.reply({ document: { url: anu.link }, caption: `*MEDIAFIRE DOWNLOADER*\n\n*${setv} Name* : ${anu.name}\n*${setv} Size* : ${anu.size}\n*${setv} Type* : ${anu.type}\n*${setv} Upload At* : ${anu.upload_date}\n*${setv} Link* : ${anu.link}`, fileName: anu.name, mimetype: anu.type })
+					let { result: res } = await fetchApi('/download/mediafire', { url: text })
+					await naze.sendMedia(m.chat, res.link, res.filename, `*MEDIAFIRE DOWNLOADER*\n\n*${setv} Name* : ${res.filename}\n*${setv} Size* : ${res.size}`, m)
 					setLimit(m, db)
 				} catch (e) {
-					try {
-						let anu = await fetchApi('/download/mediafire', { url: text })
-						await naze.sendMedia(m.chat, anu.data.url, anu.data.filename, `*MEDIAFIRE DOWNLOADER*\n\n*${setv} Name* : ${anu.data.filename}\n*${setv} Size* : ${anu.data.size}`, m)
-						setLimit(m, db)
-					} catch (e) {
-						m.reply('Server download sedang offline!')
-					}
+					m.reply(mess.fail)
 				}
 			}
 			break
@@ -3010,16 +3173,18 @@ module.exports = naze = async (naze, m, msg, store) => {
 				if (!isLimit) return m.reply(mess.limit)
 				if (!text) return m.reply(`Example: ${prefix + command} https://open.spotify.com/track/0JiVRyTJcJnmlwCZ854K4p`)
 				if (!isUrl(args[0]) && !args[0].includes('open.spotify.com/track')) return m.reply('Url Invalid!')
+				let buffer;
 				try {
-					const hasil = await spotifyDl(text);
-					m.reply(mess.wait)
+					const { result: hasil } = await fetchApi('/download/spotify', { url: text })
+					buffer = await fetchApi('/download/spotify/audio', { url: text }, { stream: true })
+					m.react('⏳')
 					await m.reply({
-						audio: { url: hasil.download },
+						audio: { url: buffer },
 						mimetype: 'audio/mpeg',
 						contextInfo: {
 							externalAdReply: {
-								title: hasil.title,
-								body: clockString(hasil.duration),
+								title: hasil.artist + ' • ' + hasil.title,
+								body: hasil.duration,
 								previewType: 'PHOTO',
 								thumbnailUrl: hasil.cover,
 								mediaType: 1,
@@ -3031,47 +3196,48 @@ module.exports = naze = async (naze, m, msg, store) => {
 					setLimit(m, db)
 				} catch (e) {
 					console.log(e)
-					m.reply('Server download sedang offline!')
+					m.reply(mess.fail)
+				} finally {
+					if (fs.existsSync(buffer)) fs.unlinkSync(buffer);
 				}
 			}
 			break
 			
 			// Quotes Menu
 			case 'motivasi': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/motivasi.json');
-				m.reply(pickRandom(hasil))
+				const hasil = await fetchApi('/random/motivasi');
+				m.reply(hasil.result)
 			}
 			break
 			case 'bijak': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/bijak.json');
-				m.reply(pickRandom(hasil))
+				const hasil = await fetchApi('/random/bijak');
+				m.reply(hasil.result)
 			}
 			break
 			case 'dare': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/dare.json');
-				m.reply(pickRandom(hasil))
+				const hasil = await fetchApi('/random/dare');
+				m.reply(hasil.result)
 			}
 			break
 			case 'quotes': {
-				const res = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/quotes.json');
-				const hasil = pickRandom(res);
+				const { result: hasil } = await fetchApi('/random/quotes');
 				m.reply(`_${hasil.quotes}_\n\n*- ${hasil.author}*`)
 			}
 			break
 			case 'truth': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/truth.json');
-				m.reply(`_${pickRandom(hasil)}_`)
+				const hasil = await fetchApi('/random/truth');
+				m.reply(`_${hasil.result}_`)
 			}
 			break
 			case 'renungan': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/renungan.json');
+				const hasil = await fetchApi('/random/renungan');
 				m.reply('', {
 					contextInfo: {
 						forwardingScore: 10,
 						isForwarded: true,
 						externalAdReply: {
 							title: (m.pushName || 'Anonim'),
-							thumbnailUrl: pickRandom(hasil),
+							thumbnailUrl: hasil.result,
 							mediaType: 1,
 							previewType: 'PHOTO',
 							renderLargerThumbnail: true,
@@ -3081,8 +3247,8 @@ module.exports = naze = async (naze, m, msg, store) => {
 			}
 			break
 			case 'bucin': {
-				const hasil = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/kata-kata/bucin.json');
-				m.reply(pickRandom(hasil))
+				const hasil = await fetchApi('/random/bucin');
+				m.reply(hasil.result)
 			}
 			break
 			
@@ -3158,7 +3324,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'siapa': case 'siapakah': {
 				if (!m.isGroup) return m.reply(mess.group)
 				if (!text) return m.reply(`Example : ${prefix + command} jawa?`)
-				let member = (store.groupMetadata[m.chat] ? store.groupMetadata[m.chat].participants : m.metadata.participants).map(a => a.id)
+				let member = (store.groupMetadata[m.chat] ? store.groupMetadata[m.chat].participants : m.metadata.participants).map(a => a.phoneNumber)
 				let siapakh = pickRandom(member)
 				m.reply(`@${siapakh.split('@')[0]}`);
 			}
@@ -3172,9 +3338,13 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'cekmati': {
 				if (!text) return m.reply(`Example : ${prefix + command} nama lu`)
-				let teksnya = text.replace(/@|[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').replace(/\d/g, '');
-				let data = await axios.get(`https://api.agify.io/?name=${teksnya ? teksnya : 'bot'}`).then(res => res.data).catch(e => ({ age: Math.floor(Math.random() * 90) + 20 }));
-				m.reply(`Nama : ${text}\n*Mati Pada Umur :* ${data.age == null ? (Math.floor(Math.random() * 90) + 20) : data.age} Tahun.\n\n_Cepet Cepet Tobat Bro_\n_Soalnya Mati ga ada yang tau_`)
+				let teksnya = encodeToLetters(text);
+				let data = await axios.get(`https://api.agify.io/?name=${teksnya}`).then(res => res.data).catch(e => ({ age: null }));
+				let consistentAge = 0
+				for (let i = 0; i < teksnya.length; i++) consistentAge += teksnya.charCodeAt(i)
+				let finalAge = data.age == null ? (consistentAge % 90) + 20 : data.age
+				let nameDisplay = m.mentionedJid && m.mentionedJid.length > 0 ? `@${m.mentionedJid[0].split('@')[0]}` : text
+				m.reply(`Nama : ${nameDisplay}\n*Mati Pada Umur :* ${finalAge} Tahun.\n\n_Cepet Cepet Tobat Bro_\n_Soalnya Mati ga ada yang tau_`)
 			}
 			break
 			case 'ceksifat': {
@@ -3187,8 +3357,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'cekkhodam': {
 				if (!text) return m.reply(`Example : ${prefix + command} nama lu`)
 				try {
-					const res = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/random/cekkhodam.json');
-					const hasil = pickRandom(res);
+					const { result: hasil } = await fetchApi('/primbon/cekkhodam');
 					m.reply(`Khodam dari *${text}* adalah *${hasil.nama}*\n_${hasil.deskripsi}_`)
 				} catch (e) {
 					m.reply(pickRandom(['Dokter Indosiar','Sigit Rendang','Ustadz Sinetron','Bocil epep']))
@@ -3201,14 +3370,14 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'jodohku': {
 				if (!m.isGroup) return m.reply(mess.group)
-				let member = (store.groupMetadata?.[m.chat]?.participants || m.metadata?.participants || []).map(a => a.id)
+				let member = (store.groupMetadata?.[m.chat]?.participants || m.metadata?.participants || []).map(a => a.phoneNumber)
 				let jodoh = pickRandom(member)
 				m.reply(`👫Jodoh mu adalah\n@${m.sender.split('@')[0]} ❤ @${jodoh ? jodoh.split('@')[0] : '0'}`);
 			}
 			break
 			case 'jadian': {
 				if (!m.isGroup) return m.reply(mess.group)
-				let member = (store.groupMetadata?.[m.chat]?.participants || m.metadata?.participants || []).map(a => a.id)
+				let member = (store.groupMetadata?.[m.chat]?.participants || m.metadata?.participants || []).map(a => a.phoneNumber)
 				let jadian1 = pickRandom(member)
 				let jadian2 = pickRandom(member)
 				m.reply(`Ciee yang Jadian💖 Jangan lupa Donasi🗿\n@${jadian1.split('@')[0]} ❤ @${jadian2.split('@')[0]}`);
@@ -3262,9 +3431,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 			case 'suitpvp': case 'suit': {
 				if (Object.values(suit).find(roof => roof.id.startsWith('suit') && [roof.p, roof.p2].includes(m.sender))) return m.reply(`Selesaikan suit mu yang sebelumnya`)
 				if (m.mentionedJid[0] === m.sender) return m.reply(`Tidak bisa bermain dengan diri sendiri !`)
-				if (!m.mentionedJid[0]) return m.reply(`_Siapa yang ingin kamu tantang?_\nTag orangnya..\n\nContoh : ${prefix}suit @${ownerNumber[0]}`, m.chat, { mentions: [ownerNumber[1] + '@s.whatsapp.net'] })
+				if (!m.mentionedJid[0]) return m.reply(`_Siapa yang ingin kamu tantang?_\nTag orangnya..\n\nExample : ${prefix}suit @${ownerNumber[0]}`, m.chat, { mentions: [ownerNumber[0] + '@s.whatsapp.net'] })
 				if (Object.values(suit).find(roof => roof.id.startsWith('suit') && [roof.p, roof.p2].includes(m.mentionedJid[0]))) return m.reply(`Orang yang kamu tantang sedang bermain suit bersama orang lain :(`)
-				let caption = `_*SUIT PvP*_\n\n@${m.sender.split`@`[0]} menantang @${m.mentionedJid[0].split`@`[0]} untuk bermain suit\n\nSilahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
+				let caption = `_*SUIT PvP*_\n\n@${m.sender.split('@')[0]} menantang @${m.mentionedJid[0].split('@')[0]} untuk bermain suit\n\nSilahkan @${m.mentionedJid[0].split('@')[0]} untuk ketik terima/tolak`
 				let id = 'suit_' + Date.now();
 				suit[id] = {
 					chat: caption,
@@ -3306,7 +3475,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 						return {X: '❌',O: '⭕',1: '1️⃣',2: '2️⃣',3: '3️⃣',4: '4️⃣',5: '5️⃣',6: '6️⃣',7: '7️⃣',8: '8️⃣',9: '9️⃣'}[v]
 					})
 					let str = `Room ID: ${room.id}\n\n${arr.slice(0, 3).join('')}\n${arr.slice(3, 6).join('')}\n${arr.slice(6).join('')}\n\nMenunggu @${room.game.currentTurn.split('@')[0]}\n\nKetik *nyerah* untuk menyerah dan mengakui kekalahan`
-					if (room.x !== room.o) await naze.sendMessage(room.x, { texr: str, mentions: parseMention(str) }, { quoted: m })
+					if (room.x !== room.o) await naze.sendMessage(room.x, { text: str, mentions: parseMention(str) }, { quoted: m })
 					await naze.sendMessage(room.o, { text: str, mentions: parseMention(str) }, { quoted: m })
 				} else {
 					room = {
@@ -3334,30 +3503,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 				m.reply(`Berhasil delete session room tictactoe !`)
 			}
 			break
-			case 'akinator': {
-				if (text == 'start') {
-					if (akinator[m.sender]) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-					akinator[m.sender] = new Akinator({ region: 'id', childMode: false });
-					try {
-						await akinator[m.sender].start()
-					} catch (e) {
-						delete akinator[m.sender];
-						return m.reply('Server Akinator Sedang Gangguan\nSilahkan coba lagi nanti!')
-					}
-					let { key } = await m.reply(`🎮 Akinator Game :\n\n@${m.sender.split('@')[0]}\n${akinator[m.sender].question}\n\n- 0 - Ya\n- 1 - Tidak\n- 2 - Tidak Tau\n- 3 - Mungkin\n- 4 - Mungkin Tidak\n\n${prefix + command} end (Untuk Keluar dari sesi)`)
-					akinator[m.sender].key = key.id
-					await sleep(3600000)
-					if (akinator[m.sender]) {
-						m.reply(`_Waktu ${command} habis_`)
-						delete akinator[m.sender];
-					}
-				} else if (text == 'end') {
-					if (!akinator[m.sender]) return m.reply('Kamu tidak Sedang bermain Akinator!')
-					delete akinator[m.sender];
-					m.reply('Sukses Mengakhiri sessi Akinator')
-				} else m.reply(`Example : ${prefix + command} start/end`)
-			}
-			break
 			case 'tebakbom': {
 				if (tebakbom[m.sender]) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
 				tebakbom[m.sender] = {
@@ -3378,8 +3523,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tekateki': {
 				if (iGame(tekateki, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tekateki.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tekateki');
 				let { key } = await m.reply(`🎮 Teka Teki Berikut :\n\n${hasil.soal}\n\nWaktu : 60s\nHadiah *+3499*`)
 				tekateki[m.chat + key.id] = {
 					jawaban: hasil.jawaban.toLowerCase(),
@@ -3394,8 +3538,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebaklirik': {
 				if (iGame(tebaklirik, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebaklirik.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebaklirik');
 				let { key } = await m.reply(`🎮 Tebak Lirik Berikut :\n\n${hasil.soal}\n\nWaktu : 90s\nHadiah *+4299*`)
 				tebaklirik[m.chat + key.id] = {
 					jawaban: hasil.jawaban.toLowerCase(),
@@ -3410,8 +3553,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebakkata': {
 				if (iGame(tebakkata, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebakkata.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebakkata');
 				let { key } = await m.reply(`🎮 Tebak Kata Berikut :\n\n${hasil.soal}\n\nWaktu : 60s\nHadiah *+3499*`)
 				tebakkata[m.chat + key.id] = {
 					jawaban: hasil.jawaban.toLowerCase(),
@@ -3426,8 +3568,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'family100': {
 				if (family100.hasOwnProperty(m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/family100.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/family100');
 				let { key } = await m.reply(`🎮 Tebak Kata Berikut :\n\n${hasil.soal}\n\nWaktu : 5m\nHadiah *+3499*`)
 				family100[m.chat] = {
 					soal: hasil.soal,
@@ -3444,8 +3585,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'susunkata': {
 				if (iGame(susunkata, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/susunkata.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/susunkata');
 				let { key } = await m.reply(`🎮 Susun Kata Berikut :\n\n${hasil.soal}\nTipe : ${hasil.tipe}\n\nWaktu : 60s\nHadiah *+2989*`)
 				susunkata[m.chat + key.id] = {
 					jawaban: hasil.jawaban.toLowerCase(),
@@ -3460,8 +3600,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebakkimia': {
 				if (iGame(tebakkimia, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebakkimia.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebakkimia');
 				let { key } = await m.reply(`🎮 Tebak Kimia Berikut :\n\n${hasil.unsur}\n\nWaktu : 60s\nHadiah *+3499*`)
 				tebakkimia[m.chat + key.id] = {
 					jawaban: hasil.lambang.toLowerCase(),
@@ -3476,8 +3615,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'caklontong': {
 				if (iGame(caklontong, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/caklontong.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/caklontong');
 				let { key } = await m.reply(`🎮 Jawab Pertanyaan Berikut :\n\n${hasil.soal}\n\nWaktu : 60s\nHadiah *+9999*`)
 				caklontong[m.chat + key.id] = {
 					...hasil,
@@ -3493,8 +3631,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebaknegara': {
 				if (iGame(tebaknegara, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebaknegara.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebaknegara');
 				let { key } = await m.reply(`🎮 Tebak Negara Dari Tempat Berikut :\n\n*Tempat : ${hasil.tempat}*\n\nWaktu : 60s\nHadiah *+3499*`)
 				tebaknegara[m.chat + key.id] = {
 					jawaban: hasil.negara.toLowerCase(),
@@ -3509,8 +3646,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebakgambar': {
 				if (iGame(tebakgambar, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebakgambar.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebakgambar');
 				let { key } = await naze.sendFileUrl(m.chat, hasil.img, `🎮 Tebak Gambar Berikut :\n\n${hasil.deskripsi}\n\nWaktu : 60s\nHadiah *+3499*`, m)
 				tebakgambar[m.chat + key.id] = {
 					jawaban: hasil.jawaban.toLowerCase(),
@@ -3525,8 +3661,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebakbendera': {
 				if (iGame(tebakbendera, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/games/tebakbendera.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/games/tebakbendera');
 				let { key } = await m.reply(`🎮 Tebak Bendera Berikut :\n\n*Bendera : ${hasil.bendera}*\n\nWaktu : 60s\nHadiah *+3499*`)
 				tebakbendera[m.chat + key.id] = {
 					jawaban: hasil.negara.toLowerCase(),
@@ -3541,8 +3676,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 			break
 			case 'tebakangka': case 'butawarna': case 'colorblind': {
 				if (iGame(tebakangka, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				const soal = await fetchJson('https://raw.githubusercontent.com/nazedev/database/refs/heads/master/random/color_blind.json');
-				const hasil = pickRandom(soal);
+				const { result: hasil } = await fetchApi('/random/color-blind');
 				let { key } = await m.reply({
 					text: `Pilih Jawaban Yang Benar!\nPilihan: ${[hasil.number, ...hasil.similar].sort(() => Math.random() - 0.5).join(', ')}`,
 					contextInfo: {
@@ -3570,7 +3704,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				const { genMath, modes } = require('./lib/math');
 				const inputMode = ['noob', 'easy', 'medium', 'hard','extreme','impossible','impossible2'];
 				if (iGame(kuismath, m.chat)) return m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
-				if (!text) return m.reply(`Mode: ${Object.keys(modes).join(' | ')}\nContoh penggunaan: ${prefix}math medium`)
+				if (!text) return m.reply(`Mode: ${Object.keys(modes).join(' | ')}\nExample penggunaan: ${prefix}math medium`)
 				if (!inputMode.includes(text.toLowerCase())) return m.reply('Mode tidak ditemukan!')
 				let result = await genMath(text.toLowerCase())
 				let { key } = await m.reply(`*Berapa hasil dari: ${result.soal.toLowerCase()}*?\n\nWaktu : ${(result.waktu / 1000).toFixed(2)} detik`)
@@ -3789,7 +3923,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 						if (!session.started) return m.reply('Game Belum Di Mulai!')
 						if (session.players.length < 2) return m.reply('Minimal 2 Pemain Untuk Memulai Permainan!');
 						if (!session.players?.some(a => a.id === m.sender)) return m.reply('Kamu belum bergabung!');
-						if (!args[0]) return m.reply(`Gunakan format:\n${prefix + command} play <kartu>\nContoh: ${prefix + command} hit`);
+						if (!args[0]) return m.reply(`Gunakan format:\n${prefix + command} play <kartu>\nExample: ${prefix + command} hit`);
 						const player = session.players.find(p => p.id === m.sender);
 						const hitIndex = player.cards.findIndex(c => (c.rank + c.suit) === (session.startCard.rank + session.startCard.suit));
 						if (session.submitCard.some(s => s.id === m.sender) || session.skip.includes(m.sender)) {
@@ -3846,7 +3980,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 						if (!session.started) return m.reply('Game Belum Di Mulai!')
 						if (session.players.length < 2) return m.reply('Minimal 2 Pemain Untuk Memulai Permainan!');
 						if (!session.players?.some(a => a.id === m.sender)) return m.reply('Kamu belum bergabung!');
-						if (!args[1]) return m.reply(`Gunakan format:\n${prefix + command} play <kartu>\nContoh: ${prefix + command} play 3♥️`);
+						if (!args[1]) return m.reply(`Gunakan format:\n${prefix + command} play <kartu>\nExample: ${prefix + command} play 3♥️`);
 						const player = session.players.find(p => p.id === m.sender);
 						const idx = player.cards.findIndex(c => normalize(c.rank + c.suit) === normalize(args[1]));
 						if (idx === -1) return m.reply('Kartu tidak valid!');
@@ -3929,11 +4063,12 @@ module.exports = naze = async (naze, m, msg, store) => {
 			// Menu
 			case 'menu': {
 				if (args[0] == 'set') {
+					if (!isCreator) return m.reply(mess.owner)
 					if (['1','2','3'].includes(args[1])) {
 						set.template = parseInt(Number(args[1]))
 						m.reply('Sukses Mengubah Template Menu')
-					} else m.reply(`Silahkan Pilih Templat:\n- 1 (Button Menu)\n- 2 (List Menu)\n- 3 (Document Menu)`)
-				} else await templateMenu(naze, set.template, m, prefix, setv, db, { botNumber, author, packname, isVip, isPremium })
+					} else m.reply(`Template Menu:\n- 1 (Button Menu)\n- 2 (List Menu)\n- 3 (Document Menu)\n\nExample: ${prefix + command} set 1`)
+				} else await templateMenu(naze, set.template, m, prefix, setv, db, { locale_day, date, date_time, botNumber, author, packname, isVip, isPremium, ucapanWaktu })
 			}
 			break
 			case 'allmenu': {
@@ -3952,7 +4087,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 ├ *Money* : ${db.users[m.sender] ? db.users[m.sender].money.toLocaleString('id-ID') : '0'}
 ╰─┬────❍
 ╭─┴─❍「 *BOT INFO* 」❍
-├ *Nama Bot* : ${db?.set?.[botNumber]?.botname || 'Naze Bot'}
+├ *Nama Bot* : ${set?.botname || 'Naze Bot'}
 ├ *Powered* : @${'0@s.whatsapp.net'.split('@')[0]}
 ├ *Owner* : @${ownerNumber[0].split('@')[0]}
 ├ *Mode* : ${naze.public ? 'Public' : 'Self'}
@@ -3960,9 +4095,9 @@ module.exports = naze = async (naze, m, msg, store) => {
 ├ *Premium Feature* : 🔸️
 ╰─┬────❍
 ╭─┴─❍「 *ABOUT* 」❍
-├ *Tanggal* : ${tanggal}
-├ *Hari* : ${hari}
-├ *Jam* : ${jam} WIB
+├ *Date* : ${date}
+├ *Day* : ${locale_day}
+├ *Time* : ${date_time}
 ╰──────❍
 ╭──❍「 *BOT* 」❍
 │${setv} ${prefix}profile
@@ -4101,8 +4236,12 @@ module.exports = naze = async (naze, m, msg, store) => {
 ╰─┬────❍
 ╭─┴❍「 *AI* 」❍
 │${setv} ${prefix}ai (query)
-│${setv} ${prefix}simi (query)
 │${setv} ${prefix}gemini (query)
+│${setv} ${prefix}glm (query)
+│${setv} ${prefix}grok (query)
+│${setv} ${prefix}claude (query)
+│${setv} ${prefix}archipelago (query)
+│${setv} ${prefix}deepseek (query)
 │${setv} ${prefix}txt2img (query)
 ╰─┬────❍
 ╭─┴❍「 *ANIME* 」❍
@@ -4111,7 +4250,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 ╰─┬────❍
 ╭─┴❍「 *GAME* 」❍
 │${setv} ${prefix}tictactoe
-│${setv} ${prefix}akinator
 │${setv} ${prefix}suit
 │${setv} ${prefix}slot
 │${setv} ${prefix}math (level)
@@ -4161,11 +4299,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 ╰─┬────❍
 ╭─┴❍「 *STALKER* 」❍
 │${setv} ${prefix}wastalk
-│${setv} ${prefix}telestalk
-│${setv} ${prefix}igstalk
-│${setv} ${prefix}tiktokstalk
 │${setv} ${prefix}githubstalk
-│${setv} ${prefix}genshinstalk
 ╰─┬────❍
 ╭─┴❍「 *OWNER* 」❍
 │${setv} ${prefix}bot [set]
@@ -4189,9 +4323,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 │${setv} ${prefix}listprem
 │${setv} ${prefix}addlimit
 │${setv} ${prefix}adduang
+│${setv} ${prefix}setbotmessages
 │${setv} ${prefix}setbotauthor
 │${setv} ${prefix}setbotname
 │${setv} ${prefix}setbotpackname
+│${setv} ${prefix}setapikey
+│${setv} ${prefix}setbotlimit
+│${setv} ${prefix}setbotmoney
+│${setv} ${prefix}setlocale
+│${setv} ${prefix}settimezone
+│${setv} ${prefix}addprefix
+│${setv} ${prefix}delprefix
+│${setv} ${prefix}addbadword
+│${setv} ${prefix}delbadword
 │${setv} ${prefix}addowner
 │${setv} ${prefix}delowner
 │${setv} ${prefix}getmsgstore
@@ -4400,8 +4544,12 @@ module.exports = naze = async (naze, m, msg, store) => {
 				m.reply(`
 ╭──❍「 *AI* 」❍
 │${setv} ${prefix}ai (query)
-│${setv} ${prefix}simi (query)
 │${setv} ${prefix}gemini (query)
+│${setv} ${prefix}glm (query)
+│${setv} ${prefix}grok (query)
+│${setv} ${prefix}claude (query)
+│${setv} ${prefix}archipelago (query)
+│${setv} ${prefix}deepseek (query)
 │${setv} ${prefix}txt2img (query)
 ╰──────❍`)
 			}
@@ -4417,11 +4565,7 @@ module.exports = naze = async (naze, m, msg, store) => {
 				m.reply(`
 ╭──❍「 *STALKER* 」❍
 │${setv} ${prefix}wastalk
-│${setv} ${prefix}telestalk
-│${setv} ${prefix}igstalk
-│${setv} ${prefix}tiktokstalk
 │${setv} ${prefix}githubstalk
-│${setv} ${prefix}genshinstalk
 ╰──────❍`)
 			}
 			break
@@ -4437,7 +4581,6 @@ module.exports = naze = async (naze, m, msg, store) => {
 				m.reply(`
 ╭──❍「 *GAME* 」❍
 │${setv} ${prefix}tictactoe
-│${setv} ${prefix}akinator
 │${setv} ${prefix}suit
 │${setv} ${prefix}slot
 │${setv} ${prefix}math (level)
@@ -4512,9 +4655,19 @@ module.exports = naze = async (naze, m, msg, store) => {
 │${setv} ${prefix}listprem
 │${setv} ${prefix}addlimit
 │${setv} ${prefix}adduang
+│${setv} ${prefix}setbotmessages
 │${setv} ${prefix}setbotauthor
 │${setv} ${prefix}setbotname
 │${setv} ${prefix}setbotpackname
+│${setv} ${prefix}setapikey
+│${setv} ${prefix}setbotlimit
+│${setv} ${prefix}setbotmoney
+│${setv} ${prefix}setlocale
+│${setv} ${prefix}settimezone
+│${setv} ${prefix}addprefix
+│${setv} ${prefix}delprefix
+│${setv} ${prefix}addbadword
+│${setv} ${prefix}delbadword
 │${setv} ${prefix}addowner
 │${setv} ${prefix}delowner
 │${setv} ${prefix}getmsgstore
@@ -4569,22 +4722,55 @@ module.exports = naze = async (naze, m, msg, store) => {
 		}
 	} catch (e) {
 		console.log(e);
-		if (e?.message?.includes('No sessions')) return;
+		if (e?.message?.includes('No sessions') || e?.message?.includes('ffmpeg exited with code') || e?.code === 'ERR_FR_MAX_BODY_LENGTH_EXCEEDED' || e?.message?.includes('maxBodyLength limit')) return;
 		const errorKey = e?.code || e?.name || e?.message?.slice(0, 100) || 'unknown_error';
 		const now = Date.now();
 		if (!errorCache[errorKey]) errorCache[errorKey] = [];
 		errorCache[errorKey] = errorCache[errorKey].filter(ts => now - ts < 600000);
 		if (errorCache[errorKey].length >= 3) return;
 		errorCache[errorKey].push(now);
-		m.reply('Error: ' + (e?.name || e?.code || e?.output?.statusCode || e?.status || 'Tidak diketahui') + '\nLog Error Telah dikirim ke Owner\n\n')
-		return naze.sendFromOwner(ownerNumber, `Halo sayang, sepertinya ada yang error nih, jangan lupa diperbaiki ya\n\nVersion : *${require('./package.json').version}*\n\n*Log error:*\n\n` + util.format(e), m, { contextInfo: { isForwarded: true }})
+		const isAxiosError = e?.isAxiosError || !!e?.response; 
+		const isBaileysBoomError = e?.isBoom || e?.message === 'forbidden' || e?.data === 403;
+		if (isBaileysBoomError && !isAxiosError) {
+			console.log(chalk.yellowBright('[SYSTEM] Error Baileys (Grup Forbidden) terdeteksi. Memperbarui store groupMetadata...'));
+			try {
+				store.groupMetadata = await naze.groupFetchAllParticipating();
+			} catch (updateErr) {
+				console.log(chalk.yellowBright('[SYSTEM] Gagal memperbarui store:', updateErr?.message));
+			}
+		}
+		const statusCode = e?.response?.status || e?.statusCode || e?.data;
+		const errorUrl = e?.config?.url || e?.request?.host || '';
+		/*const networkErrors = ['ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'ECONNRESET', 'EAI_AGAIN', 'ENETUNREACH', 'ECONNABORTED'];
+		if (networkErrors.includes(e?.code)) {
+			return m.reply('⚠️ *Gangguan Jaringan*\nSistem sedang mengalami kendala koneksi ke server tujuan (DNS/Timeout/Jaringan tidak stabil).\nDisarankan Cek Log Terminal.\nSilakan coba lagi dalam beberapa saat.');
+		} else*/ if (statusCode === 500) {
+			m.reply('Server API Error: Terjadi gangguan pada server tujuan.');
+		} else if (statusCode === 429) {
+			if (errorUrl.includes('api.naze.biz.id')) {
+				return m.reply('Limit Reached: ' + mess.key);
+			} else m.reply('Limit Reached (Sistem/WA): Terlalu banyak permintaan.\nLog Error Telah dikirim ke Owner');
+		} else if (statusCode === 403) {
+			if (isAxiosError) {
+				if (errorUrl.includes('api.naze.biz.id')) {
+					return m.reply('Akses Khusus Premium!');
+				} else m.reply('API Error: Akses ke server API ditolak (403 Forbidden).');
+			} else console.log(chalk.yellowBright('[SYSTEM] Akses grup ditolak (Baileys 403 / Forbidden).'));
+		} else if (statusCode === 401) {
+			if (isAxiosError) {
+				if (errorUrl.includes('api.naze.biz.id')) {
+					return m.reply('Invalid Apikey!');
+				} else m.reply('API Error: Akses ke server API ditolak (401 Unauthorized).');
+			} else console.log(chalk.yellowBright('[SYSTEM] Akses ditolak (401 Unauthorized).'));
+		} else m.reply('Error: ' + (e?.name || e?.code || e?.message || 'Terjadi kesalahan tidak diketahui') + '\nLog Error Telah dikirim ke Owner\n\n');
+		return naze.sendFromOwner(ownerNumber, `Halo sayang, sepertinya ada yang error nih, jangan lupa diperbaiki ya\n\nVersion : *${require('./package.json').version}*\nType : *${m.type || errorKey}*\n\n*Log error:*\n\n` + util.format(e), m, { contextInfo: { isForwarded: true }})
 	}
 }
 
 let file = require.resolve(__filename)
 fs.watchFile(file, () => {
 	fs.unwatchFile(file)
-	console.log(chalk.redBright(`Update ${__filename}`))
+	console.log(chalk.yellowBright(`[UPDATE] ${__filename}`))
 	delete require.cache[file]
 	require(file)
 });

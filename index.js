@@ -1,28 +1,33 @@
 require('./settings');
 const fs = require('fs');
 const os = require('os');
+const dns = require('dns');
 const pino = require('pino');
 const path = require('path');
 const axios = require('axios');
 const chalk = require('chalk');
+const cron = require('node-cron');
 const readline = require('readline');
+const { toBuffer } = require('qrcode');
+const { exec } = require('child_process');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const NodeCache = require('node-cache');
-const { toBuffer, toDataURL } = require('qrcode');
-const { exec, spawn, execSync } = require('child_process');
+const moment = require('moment-timezone');
 const { parsePhoneNumber } = require('awesome-phonenumber');
-const { default: WAConnection, useMultiFileAuthState, Browsers, DisconnectReason, makeInMemoryStore, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, proto, jidNormalizedUser, getAggregateVotesInPollMessage } = require('baileys');
+const { default: WAConnection, useMultiFileAuthState, Browsers, DisconnectReason, makeCacheableSignalKeyStore, fetchLatestWaWebVersion, jidNormalizedUser } = require('baileys');
 
-const { dataBase } = require('./src/database');
 const { app, server, PORT } = require('./src/server');
+const { dataBase, cmdDel, checkStatus } = require('./src/database');
+const { assertInstalled, customHttpsAgent } = require('./lib/function');
 const { GroupParticipantsUpdate, MessagesUpsert, Solving } = require('./src/message');
-const { isUrl, generateMessageTag, getBuffer, getSizeMedia, fetchJson, assertInstalled, sleep } = require('./lib/function');
 
 const print = (label, value) => console.log(`${chalk.green.bold('║')} ${chalk.cyan.bold(label.padEnd(16))}${chalk.yellow.bold(':')} ${value}`);
 const pairingCode = process.argv.includes('--qr') ? false : process.argv.includes('--pairing-code') || global.pairing_code;
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 const question = (text) => new Promise((resolve) => rl.question(text, resolve))
+const time_now = new Date();
+const time_end = 60000 - (time_now.getSeconds() * 1000 + time_now.getMilliseconds());
 let pairingStarted = false;
 let phoneNumber;
 
@@ -34,10 +39,75 @@ const userInfoSyt = () => {
 	}
 }
 
-global.fetchApi = async (path = '/', query = {}, options) => {
-	const urlnya = (options?.name || options ? ((options?.name || options) in global.APIs ? global.APIs[(options?.name || options)] : (options?.name || options)) : global.APIs['hitori'] ? global.APIs['hitori'] : (options?.name || options)) + path + (query ? '?' + decodeURIComponent(new URLSearchParams(Object.entries({ ...query }))) : '')
-	const { data } = await axios.get(urlnya, { ...((options?.name || options) ? {} : { headers: { 'accept': 'application/json', 'x-api-key': global.APIKeys[global.APIs['hitori']]}})})
-	return data
+try {
+	dns.setServers(['8.8.8.8', '1.1.1.1']);
+	console.log(chalk.yellowBright('[SYSTEM] Custom DNS Google & Cloudflare.'));
+} catch (e) {
+	console.log(chalk.yellowBright('[SYSTEM] failed to custom DNS:'), e.message);
+}
+
+// Fetch Api
+global.fetchApi = async (endpoint = '/', data = {}, options = {}) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const apiList = Object.keys(global.APIs);
+			if (options.api !== undefined) {
+				if (typeof options.api !== 'number' || options.api < 1 || options.api > apiList.length) {
+					return reject(new Error(`[Fetch Error] Parameter { api: ${options.api} } tidak terdaftar. Harap gunakan angka 1 hingga ${apiList.length}.`));
+				}
+			}
+			const apiName = typeof options.api === 'number' ? apiList[options.api - 1] : options.name
+			const base = apiName ? (global.APIs[apiName] || apiName) : global.APIs.naze
+			const apikey = global.APIKeys[base] || '';
+			let method = (options.method || 'GET').toUpperCase()
+			let url = base + endpoint 
+			let payload = null
+			let headers = options.headers || { 'user-agent': 'Mozilla/5.0 (Linux; Android 15)' }
+			const isForm = options.form || data instanceof FormData || (data && typeof data.getHeaders === 'function');
+			if (isForm) {
+				payload = data
+				method = 'POST'
+				headers = { ...(options.headers?.['Authorization'] ? {} : { apikey }), ...headers, ...data.getHeaders() }
+			} else if (method !== 'GET') {
+				payload = { ...data, ...(options.headers?.['Authorization'] ? {} : { apikey }) }
+				headers['content-type'] = 'application/json'
+			} else {
+				url += '?' + new URLSearchParams({ ...data, apikey }).toString()
+			}
+			const res = await axios({
+				method, url, data: payload,
+				headers, httpsAgent: customHttpsAgent,
+				responseType: options.stream ? 'stream' : (options.buffer ? 'arraybuffer' : options.responseType || options.type || 'json'),
+			});
+			if (options.stream) {
+				let ext = options.ext
+				if (typeof options.stream !== 'string' && !ext) {
+					const contentDisp = res.headers['content-disposition']
+					const contentType = res.headers['content-type']
+					if (contentDisp && contentDisp.includes('filename=')) {
+						const match = contentDisp.match(/filename="?([^"]+)"?/)
+						if (match && match[1]) {
+							ext = match[1].split('.').pop()
+						}
+					}
+					if (!ext && contentType) {
+						ext = contentType.split('/')[1]?.split(';')[0]
+						if (ext === 'jpeg') ext = 'jpg'
+					}
+					ext = ext || 'tmp'
+				}
+				let streamPath = typeof options.stream === 'string' ? options.stream : path.join(process.cwd(), 'database/temp', 'temp-' + Date.now() + '.' + ext)
+				const writeStream = fs.createWriteStream(streamPath)
+				res.data.pipe(writeStream)
+				writeStream.on('finish', () => resolve(streamPath))
+				writeStream.on('error', reject)
+			} else {
+				resolve(options.buffer ? Buffer.from(res.data) : res.data)
+			}
+		} catch (e) {
+			reject(e)
+		}
+	})
 }
 
 const storeDB = dataBase(global.tempatStore);
@@ -45,7 +115,6 @@ const database = dataBase(global.tempatDB);
 const msgRetryCounterCache = new NodeCache();
 
 assertInstalled(process.platform === 'win32' ? 'where ffmpeg' : 'command -v ffmpeg', 'FFmpeg', 0);
-//assertInstalled(process.platform === 'win32' ? 'where magick' : 'command -v convert', 'ImageMagick', 0);
 console.log(chalk.greenBright('✅  All external dependencies are satisfied'));
 console.log(chalk.green.bold(`╔═════[${`${chalk.cyan(userInfoSyt())}@${chalk.cyan(os.hostname())}`}]═════`));
 print('OS', `${os.platform()} ${os.release()} ${os.arch()}`);
@@ -69,10 +138,6 @@ server.listen(PORT, () => {
 */
 
 async function startNazeBot() {
-	const { state, saveCreds } = await useMultiFileAuthState('nazedev');
-	const { version, isLatest } = await fetchLatestBaileysVersion();
-	const level = pino({ level: 'silent' });
-	
 	try {
 		const loadData = await database.read()
 		const storeLoadData = await storeDB.read()
@@ -107,24 +172,29 @@ async function startNazeBot() {
 			global.store = storeLoadData
 		}
 		
-		setInterval(async () => {
-			if (global.db) await database.write(global.db)
-			if (global.store) await storeDB.write(global.store)
-		}, 30 * 1000)
+		global.loadMessage = function (remoteJid, id) {
+			const messages = store.messages?.[remoteJid]?.array;
+			if (!messages) return null;
+			return messages.find(msg => msg?.key?.id === id) || null;
+		}
+		
+		if (!global._dbInterval) {
+			global._dbInterval = setInterval(async () => {
+				if (global.db) await database.write(global.db)
+				if (global.store) await storeDB.write(global.store)
+			}, 30 * 1000)
+		}
 	} catch (e) {
 		console.log(e)
 		process.exit(1)
 	}
 	
-	store.loadMessage = function (remoteJid, id) {
-		const messages = store.messages?.[remoteJid]?.array;
-		if (!messages) return null;
-		return messages.find(msg => msg?.key?.id === id) || null;
-	}
-	
+	const level = pino({ level: 'silent' });
+	const { version } = await fetchLatestWaWebVersion();
+	const { state, saveCreds } = await useMultiFileAuthState('nazedev');
 	const getMessage = async (key) => {
-		if (store) {
-			const msg = await store.loadMessage(key.remoteJid, key.id);
+		if (global.store) {
+			const msg = await global.loadMessage(key.remoteJid, key.id);
 			return msg?.message || ''
 		}
 		return {
@@ -132,21 +202,20 @@ async function startNazeBot() {
 		}
 	}
 	
+	// Connector
 	const naze = WAConnection({
+		version,
 		logger: level,
 		getMessage,
-		syncFullHistory: true,
+		syncFullHistory: false,
 		maxMsgRetryCount: 15,
 		msgRetryCounterCache,
 		retryRequestDelayMs: 10,
 		defaultQueryTimeoutMs: 0,
 		connectTimeoutMs: 60000,
+		keepAliveIntervalMs: 30000,
 		browser: Browsers.ubuntu('Chrome'),
-		generateHighQualityLinkPreview: true,
-		shouldSyncHistoryMessage: msg => {
-			console.log(`\x1b[32mMemuat Chat [${msg.progress || 0}%]\x1b[39m`);
-			return !!msg.syncType;
-		},
+		generateHighQualityLinkPreview: false,
 		transactionOpts: {
 			maxCommitRetries: 10,
 			delayBetweenTriesMs: 10,
@@ -173,18 +242,17 @@ async function startNazeBot() {
 		}
 		(async () => {
 			await getPhoneNumber();
-			await exec('rm -rf ./nazedev/*');
+			exec('rm -rf ./nazedev/*');
 			console.log('Phone number captured. Waiting for Connection...\n' + chalk.blueBright('Estimated time: around 2 ~ 5 minutes'))
 		})()
 	}
 	
-	await Solving(naze, store)
+	await Solving(naze, global.store)
 	
 	naze.ev.on('creds.update', saveCreds)
 	
 	naze.ev.on('connection.update', async (update) => {
-		const { qr, connection, lastDisconnect, isNewLogin, receivedPendingNotifications } = update
-		if (!naze.authState.creds.registered) console.log('Connection: ', connection || false);
+		const { qr, connection, lastDisconnect, isNewLogin, receivedPendingNotifications } = update;
 		if ((connection === 'connecting' || !!qr) && pairingCode && phoneNumber && !naze.authState.creds.registered && !pairingStarted) {
 			setTimeout(async () => {
 				pairingStarted = true;
@@ -245,30 +313,10 @@ async function startNazeBot() {
 				res.end(await toBuffer(qr))
 			});
 		}
-		if (isNewLogin) console.log(chalk.green('New device login detected...'))
+		if (isNewLogin) console.log(chalk.green('[INFO] New device login detected...'))
 		if (receivedPendingNotifications == 'true') {
-			console.log('Please wait About 1 Minute...')
+			console.log(chalk.green('[INFO] Please wait About 1 Minute...'))
 			naze.ev.flush()
-		}
-	});
-	
-	naze.ev.on('contacts.update', (update) => {
-		for (let contact of update) {
-			let trueJid;
-			if (!trueJid) continue;
-			if (contact.id.endsWith('@lid')) {
-				trueJid = naze.findJidByLid(contact.id, store);
-			} else {
-				trueJid = jidNormalizedUser(contact.id);
-			}
-			store.contacts[trueJid] = {
-				...store.contacts[trueJid],
-				id: trueJid,
-				name: contact.notify
-			}
-			if (contact.id.endsWith('@lid')) {
-				store.contacts[trueJid].lid = jidNormalizedUser(contact.id);
-			}
 		}
 	});
 	
@@ -286,29 +334,85 @@ async function startNazeBot() {
 	});
 	
 	naze.ev.on('messages.upsert', async (message) => {
-		await MessagesUpsert(naze, message, store);
+		await MessagesUpsert(naze, message, global.store);
 	});
 	
 	naze.ev.on('group-participants.update', async (update) => {
-		await GroupParticipantsUpdate(naze, update, store);
+		await GroupParticipantsUpdate(naze, update, global.store);
 	});
 	
 	naze.ev.on('groups.update', (update) => {
 		for (const n of update) {
-			if (store.groupMetadata[n.id]) {
-				Object.assign(store.groupMetadata[n.id], n);
-			} else store.groupMetadata[n.id] = n;
+			if (global.store.groupMetadata[n.id]) {
+				Object.assign(global.store.groupMetadata[n.id], n);
+			} else global.store.groupMetadata[n.id] = n;
 		}
 	});
 	
-	naze.ev.on('presence.update', ({ id, presences: update }) => {
-		store.presences[id] = store.presences?.[id] || {};
-		Object.assign(store.presences[id], update);
+	naze.ev.on('presence.update', ({ id, presences }) => {
+		store.presences[id] = global.store.presences?.[id] || {};
+		Object.assign(global.store.presences[id], presences);
 	});
 	
-	setInterval(async () => {
-		if (naze?.user?.id) await naze.sendPresenceUpdate('available', naze.decodeJid(naze.user.id)).catch(e => {})
-	}, 10 * 60 * 1000);
+	// Reset Limit & Backup
+	cron.schedule('00 00 * * *', async () => {
+		cmdDel(global.db.hit);
+		console.log(chalk.cyan('[INFO] Reseted Limit Users'));
+		let user = Object.keys(global.db.users)
+		let botNumber = await naze.decodeJid(naze.user.id);
+		for (let jid of user) {
+			const limitUser = global.db.users[jid].vip ? global.limit.vip : checkStatus(jid, global.db.premium) ? global.limit.premium : global.limit.free
+			if (global.db.users[jid].limit < limitUser) global.db.users[jid].limit = limitUser
+		}
+		if (global.db?.set[botNumber].autobackup) {
+			let datanya = './database/' + global.tempatDB;
+			if (global.tempatDB.startsWith('mongodb')) {
+				datanya = './database/backup_database.json';
+				fs.writeFileSync(datanya, JSON.stringify(global.db, null, 2), 'utf-8');
+			}
+			for (let o of ownerNumber) {
+				try {
+					await naze.sendMessage(o, { document: fs.readFileSync(datanya), mimetype: 'application/json', fileName: new Date().toISOString().replace(/[:.]/g, '-') + '_database.json' })
+					console.log(chalk.cyanBright(`[AUTO BACKUP] Backup success send to ${o}`));
+				} catch (e) {
+					console.error(chalk.cyanBright(`[AUTO BACKUP] Failed to Sending Backup ${o}:`, error));
+				}
+			}
+		}
+	}, {
+		scheduled: true,
+		timezone: global.timezone
+	});
+	
+	// Waktu Sholat
+	if (!this.intervalSholat) this.intervalSholat = null;
+	if (!this.waktusholat) this.waktusholat = {};
+	if (this.intervalSholat) clearInterval(this.intervalSholat); 
+	setTimeout(() => {
+		this.intervalSholat = setInterval(async() => {
+			const sekarang = moment.tz(global.timezone);
+			const jamSholat = sekarang.format('HH:mm');
+			const hariIni = sekarang.format('YYYY-MM-DD');
+			const detik = sekarang.format('ss');
+			if (detik !== '00') return;
+			for (const [sholat, waktu] of Object.entries(global.jadwalSholat)) {
+				if (jamSholat === waktu && this.waktusholat[sholat] !== hariIni) {
+					this.waktusholat[sholat] = hariIni
+					for (const [idnya, settings] of Object.entries(global.db.groups)) {
+						if (settings.waktusholat) {
+							await naze.sendMessage(idnya, { text: `Waktu *${sholat}* telah tiba, ambilah air wudhu dan segeralah shalat🙂.\n\n*${waktu.slice(0, 5)}*\n_untuk wilayah ${global.timezone} dan sekitarnya._` }, { ephemeralExpiration: store?.messages[idnya]?.array?.slice(-1)[0]?.metadata?.ephemeralDuration || 0 }).catch(e => {})
+						}
+					}
+				}
+			}
+		}, 60000)
+	}, time_end);
+	
+	if (!global._dbPresence) {
+		global._dbPresence = setInterval(async () => {
+			if (naze?.user?.id) await naze.sendPresenceUpdate('available', naze.decodeJid(naze.user.id)).catch(e => {})
+		}, 10 * 60 * 1000);
+	}
 
 	return naze
 }
@@ -317,7 +421,7 @@ startNazeBot()
 
 // Process Exit
 const cleanup = async (signal) => {
-	console.log(`Received ${signal}. Menyimpan database...`)
+	console.log(chalk.greenBright(`[SYSTEM] Received ${signal}. Menyimpan database...`));
 	if (global.db) await database.write(global.db)
 	if (global.store) await storeDB.write(global.store)
 	server.close(() => {
@@ -332,17 +436,9 @@ process.on('exit', () => cleanup('exit'))
 
 server.on('error', (error) => {
 	if (error.code === 'EADDRINUSE') {
-		console.log(`Address localhost:${PORT} in use. Please retry when the port is available!`);
+		console.log(chalk.yellowBright(`[WARNING] Address localhost:${PORT} in use. Please retry when the port is available!`));
 		server.close();
-	} else console.error('Server error:', error);
+	} else console.error(chalk.redBright(`[ERROR] ${error}`));
 });
 
 setInterval(() => {}, 1000 * 60 * 10);
-let file = require.resolve(__filename)
-fs.watchFile(file, () => {
-	fs.unwatchFile(file)
-	console.log(chalk.redBright(`Update ${__filename}`))
-	delete require.cache[file]
-	require(file)
-});
-

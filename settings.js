@@ -9,17 +9,13 @@ const chalk = require('chalk');
 
 //~~~~~~~~~~~~< GLOBAL SETTINGS >~~~~~~~~~~~~\\
 
-global.owner = ['62895323031475', '6285935342970']
-global.author = 'Uhuy'
-global.botname = 'Uhuy Bot'
-global.packname = 'Uhuy Bot WhatsApp'
+global.owner = ["6282113821188"] // ['628','628'] 2 owner atau lebih
+global.author = 'Nazedev'
+global.botname = 'Hitori Bot'
+global.packname = 'Bot WhatsApp'
+global.timezone = 'Asia/Jakarta' // Ganti pakai command .settimezone
+global.locale = 'en' // Ganti pakai command .setlocale
 global.listprefix = ['+','!','.']
-
-/*
-- Setting Author, Packname, Botname sekarang pakai command
-- Walau sudah diganti tidak berubah
-- setbotauthor, setbotpackname, setbotname
-*/
 
 global.listv = ['•','●','■','✿','▲','➩','➢','➣','➤','✦','✧','△','❀','○','□','♤','♡','◇','♧','々','〆']
 global.tempatDB = 'database.json' // Taruh url mongodb di sini jika menggunakan mongodb. Format : 'mongodb+srv://...'
@@ -38,14 +34,14 @@ global.fake = {
 global.my = {
 	yt: 'https://youtube.com/c/Nazedev',
 	gh: 'https://github.com/nazedev',
-	gc: 'https://chat.whatsapp.com/B5qJIwZHm4VEYZJQE6iMwy',
+	gc: 'https://chat.whatsapp.com/DPUC3uuqYZI9FNLdgtMp4n?mode=gi_t',
 	ch: '120363250409960161@newsletter',
 }
 
 global.limit = {
 	free: 20,
 	premium: 999,
-	vip: 9999
+	vip: 900
 }
 
 global.money = {
@@ -55,38 +51,49 @@ global.money = {
 }
 
 global.mess = {
-	key: 'Apikey mu telah habis silahkan kunjungi\nhttps://my.hitori.pw',
-	owner: 'Fitur Khusus Owner!',
-	admin: 'Fitur Khusus Admin!',
-	botAdmin: 'Bot Bukan Admin!',
-	group: 'Gunakan Di Group!',
-	private: 'Gunakan Di Privat Chat!',
-	limit: 'Limit Anda Telah Habis!',
-	prem: 'Khusus User Premium!',
-	wait: 'Loading...',
-	error: 'Error!',
-	done: 'Done'
+	key: "Apikey limit! Silahkan Upgrade: https://naze.biz.id",
+	owner: "Khusus Owner!",
+	admin: "Khusus Admin!",
+	botAdmin: "Bot harus Admin!",
+	onWa: "Nomor tersebut tidak terdaftar di WhatsApp!",
+	group: "Khusus Grup!",
+	private: "Khusus Private Chat!",
+	quoted: "Reply pesannya!",
+	limit: "Limit habis!",
+	prem: "Khusus Premium!",
+	text: "Masukkan teksnya!",
+	media: "Kirim medianya!",
+	wait: "Proses...",
+	fail: "Gagal!",
+	error: "Error!",
+	done: "Selesai!"
 }
 
 global.APIs = {
-	hitori: 'https://api.hitori.pw',
+	naze: 'https://api.naze.biz.id',
+	neosantara: 'https://api.neosantara.xyz/v1',
 }
 global.APIKeys = {
-	'https://api.hitori.pw': 'htrkey-77eb83c0eeb39d40',
-	geminiApikey: ['AIzaSyD0lkGz6ZhKi_MHSSmJcCX3wXoDZhELPaQ','AIzaSyDnBPd_EhBfr73NssnThVQZYiKZVhGZewU','AIzaSyA94OZD-0V4quRbzPb2j75AuzSblPHE75M','AIzaSyB5aTYbUg2VQ0oXr5hdJPN8AyLJcmM84-A','AIzaSyB1xYZ2YImnBdi2Bh-If_8lj6rvSkabqlA']
+	'https://api.naze.biz.id': 'YOUR_API_KEY',
+	'https://api.neosantara.xyz/v1': 'API_KEY_NEOSANTARA_AI',
 }
 
 // Lainnya
+global.jadwalSholat = {
+	Subuh: '04:30',
+	Dzuhur: '12:06',
+	Ashar: '15:21',
+	Maghrib: '18:08',
+	Isya: '19:00'
+}
 
-global.badWords = ['tolol','goblok','asu','pantek','kampret','ngentot','jancok','kontol','memek','lonte']
+global.badWords = ['dongo', 'konsol'] // input kata-kata toxic yg lain. ex: ['dongo','dongonya']
 global.chatLength = 1000
-
-//~~~~~~~~~~~~~~~< PROCESS >~~~~~~~~~~~~~~~\\
 
 let file = require.resolve(__filename)
 fs.watchFile(file, () => {
 	fs.unwatchFile(file)
-	console.log(chalk.redBright(`Update ${__filename}`))
+	console.log(chalk.yellowBright(`[UPDATE] ${__filename}`))
 	delete require.cache[file]
 	require(file)
 });
